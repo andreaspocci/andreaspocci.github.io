@@ -81,45 +81,80 @@ function setStatus(mode, text) {
   }
 }
 
+function isNum(n) {
+  return typeof n === "number" && Number.isFinite(n);
+}
+
 function fmt(n, digits = 0) {
-  if (n == null || !Number.isFinite(n)) return "—";
+  if (!isNum(n)) return "—";
   return n.toFixed(digits);
 }
 
+function setText(id, text) {
+  const node = el(id);
+  if (node) node.textContent = text;
+}
+
+function vpdToKpa(vpdInHg) {
+  // 1 inHg = 3.386389 kPa
+  return vpdInHg * 3.386389;
+}
+
+function degToCompass(deg) {
+  if (!isNum(deg)) return "—";
+  const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+  const i = Math.round(((deg % 360) / 22.5)) % 16;
+  return dirs[i];
+}
+
 function renderStationNow(s) {
-  const o = s.outdoor || {};
-  const w = s.wind || {};
-  const p = s.pressure || {};
-  const so = s.solar || {};
-  const r = s.rain || {};
-  const i = s.indoor || {};
-  const b = s.battery || {};
+  const o = s?.outdoor || {};
+  const w = s?.wind || {};
+  const p = s?.pressure || {};
+  const so = s?.solar || {};
+  const r = s?.rain || {};
+  const i = s?.indoor || {};
+  const b = s?.battery || {};
 
-  el("nowTemp").textContent = o.tempC == null ? "--°" : `${Math.round(o.tempC)}°`;
-  el("nowDesc").textContent = `Stazione meteo · percepita ${fmt(o.feelsLikeC,0)}°`;
-  el("nowMeta").textContent = `Ultimo campione: ${new Date(s.iso).toLocaleTimeString("it-CH", { hour:"2-digit", minute:"2-digit" })} · Direzione ${fmt(w.directionDeg,0)}°`;
+  // Hero
+  setText("nowTemp", isNum(o.tempC) ? `${Math.round(o.tempC)}°` : "--°");
+  setText("nowDesc", "Stazione meteo");
+  const timeStr = s?.iso
+    ? new Date(s.iso).toLocaleTimeString("it-CH", { hour: "2-digit", minute: "2-digit" })
+    : "—";
+  const windDir = degToCompass(w.directionDeg);
+  setText("nowMeta", `Ultimo campione: ${timeStr} · Dir ${windDir} ${fmt(w.directionDeg,0)}°`);
 
-  el("humNow").textContent = o.humidity == null ? "--%" : `${Math.round(o.humidity)}%`;
-  el("pressNow").textContent = p.relativeHpa == null ? "-- hPa" : `${Math.round(p.relativeHpa)} hPa`;
-  el("windNow").textContent =
-    w.speedKmh == null ? "-- / -- km/h" : `${fmt(w.speedKmh,0)} / ${fmt(w.gustKmh,0)} km/h`;
+  // KPI principali
+  setText("humNow", isNum(o.humidity) ? `${Math.round(o.humidity)}%` : "--%");
+  setText("pressNow", isNum(p.relativeHpa) ? `${Math.round(p.relativeHpa)} hPa` : "-- hPa");
+  if (isNum(w.speedKmh) || isNum(w.gustKmh)) {
+    setText("windNow", `${fmt(w.speedKmh,0)} / ${fmt(w.gustKmh,0)} km/h`);
+  } else {
+    setText("windNow", "-- / -- km/h");
+  }
 
-  el("solarNow").textContent = so.solarWm2 == null ? "-- W/m²" : `${fmt(so.solarWm2,1)} W/m²`;
-  el("uviNow").textContent = so.uvi == null ? "--" : `${fmt(so.uvi,0)}`;
-  el("vpdNow").textContent = o.vpdInHg == null ? "--" : `${fmt(o.vpdInHg,3)} inHg`;
-  el("dewNow").textContent = o.dewPointC == null ? "--°" : `${fmt(o.dewPointC,0)}°`;
+  // Sole e atmosfera
+  setText("solarNow", isNum(so.solarWm2) ? `${fmt(so.solarWm2,1)} W/m²` : "-- W/m²");
+  setText("uviNow", isNum(so.uvi) ? `${fmt(so.uvi,0)}` : "--");
+  setText("dewNow", isNum(o.dewPointC) ? `${fmt(o.dewPointC,0)}°` : "--°");
 
-  el("rainRate").textContent = r.rateMmH == null ? "-- mm/h" : `${fmt(r.rateMmH,1)} mm/h`;
-  el("rain1h").textContent = r.mm1h == null ? "-- mm" : `${fmt(r.mm1h,1)} mm`;
-  el("rain24h").textContent = r.mm24h == null ? "-- mm" : `${fmt(r.mm24h,1)} mm`;
-  el("rainDaily").textContent = r.dailyMm == null ? "-- mm" : `${fmt(r.dailyMm,1)} mm`;
-  el("rainMonth").textContent = r.monthlyMm == null ? "-- mm" : `${fmt(r.monthlyMm,1)} mm`;
-  el("rainYear").textContent = r.yearlyMm == null ? "-- mm" : `${fmt(r.yearlyMm,1)} mm`;
+  const vpdKpa = isNum(o.vpdInHg) ? vpdToKpa(o.vpdInHg) : null;
+  setText("vpdNow", isNum(vpdKpa) ? `${fmt(vpdKpa,3)} kPa` : "--");
 
-  el("inTemp").textContent = i.tempC == null ? "--°" : `${fmt(i.tempC,0)}°`;
-  el("inHum").textContent = i.humidity == null ? "--%" : `${fmt(i.humidity,0)}%`;
-  el("battV").textContent = b.batteryV == null ? "-- V" : `${fmt(b.batteryV,2)} V`;
-  el("capV").textContent = b.capacitorV == null ? "-- V" : `${fmt(b.capacitorV,2)} V`;
+  // Pioggia
+  setText("rainRate", isNum(r.rateMmH) ? `${fmt(r.rateMmH,1)} mm/h` : "-- mm/h");
+  setText("rain1h", isNum(r.mm1h) ? `${fmt(r.mm1h,1)} mm` : "-- mm");
+  setText("rain24h", isNum(r.mm24h) ? `${fmt(r.mm24h,1)} mm` : "-- mm");
+  setText("rainDaily", isNum(r.dailyMm) ? `${fmt(r.dailyMm,1)} mm` : "-- mm");
+  setText("rainMonth", isNum(r.monthlyMm) ? `${fmt(r.monthlyMm,1)} mm` : "-- mm");
+  setText("rainYear", isNum(r.yearlyMm) ? `${fmt(r.yearlyMm,1)} mm` : "-- mm");
+
+  // Indoor e batteria
+  setText("inTemp", isNum(i.tempC) ? `${fmt(i.tempC,0)}°` : "--°");
+  setText("inHum", isNum(i.humidity) ? `${fmt(i.humidity,0)}%` : "--%");
+  setText("battV", isNum(b.batteryV) ? `${fmt(b.batteryV,2)} V` : "-- V");
+  setText("capV", isNum(b.capacitorV) ? `${fmt(b.capacitorV,2)} V` : "-- V");
 }
 
 function renderTempChart(points) {
@@ -138,10 +173,10 @@ function renderTempChart(points) {
 
   const temps = points
     .map(p => p?.outdoor?.tempC)
-    .filter(v => typeof v === "number" && isFinite(v));
+    .filter(isNum);
 
   if (temps.length < 2) {
-    el("chartLegend").textContent = "Storico insufficiente: aspetta che si accumulino campioni (cron ogni 10 minuti).";
+    setText("chartLegend", "Storico insufficiente: aspetta che si accumulino campioni (cron ogni 10 minuti).");
     return;
   }
 
@@ -165,7 +200,7 @@ function renderTempChart(points) {
   let idx = 0;
   for (const p of points) {
     const t = p?.outdoor?.tempC;
-    if (typeof t !== "number" || !isFinite(t)) continue;
+    if (!isNum(t)) continue;
     const x = pad + (idx / (temps.length - 1)) * usableW;
     const y = pad + (1 - (t - min) / (max - min)) * usableH;
     if (idx === 0) ctx.moveTo(x, y);
@@ -175,11 +210,12 @@ function renderTempChart(points) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  el("chartLegend").textContent = `Temp 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · campioni ${temps.length}`;
+  setText("chartLegend", `Temp 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · campioni ${temps.length}`);
 }
 
 function renderHourly(d) {
   const root = el("hourly");
+  if (!root) return;
   root.innerHTML = "";
 
   const hourly = d.hourly;
@@ -209,6 +245,7 @@ function renderHourly(d) {
 
 function renderDaily(d) {
   const root = el("daily");
+  if (!root) return;
   root.innerHTML = "";
 
   const daily = d.daily;
