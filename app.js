@@ -1,6 +1,6 @@
 const WORKER_BASE = "https://dry-frog-bb05.spocci.workers.dev";
 const URL_STATION_NOW = `${WORKER_BASE}/station/now`;
-const URL_STATION_HISTORY = `${WORKER_BASE}/station/history?hours=48`;
+const URL_STATION_HISTORY_COMPACT = `${WORKER_BASE}/station/history/compact?hours=48`;
 const URL_FORECAST = `${WORKER_BASE}/forecast`;
 
 const el = (id) => document.getElementById(id);
@@ -10,14 +10,14 @@ init();
 async function init() {
   setStatus("loading", "Carico");
 
-  const [stationNow, stationHist, forecast] = await Promise.allSettled([
+  const [stationNow, histCompact, forecast] = await Promise.allSettled([
     fetchJson(URL_STATION_NOW),
-    fetchJson(URL_STATION_HISTORY),
+    fetchJson(URL_STATION_HISTORY_COMPACT),
     fetchJson(URL_FORECAST),
   ]);
 
   const okStationNow = stationNow.status === "fulfilled" && stationNow.value?.ok;
-  const okHist = stationHist.status === "fulfilled" && stationHist.value?.ok;
+  const okHist = histCompact.status === "fulfilled" && histCompact.value?.ok;
   const okForecast = forecast.status === "fulfilled" && !forecast.value?.error;
 
   const updated = new Date().toLocaleString("it-CH", {
@@ -40,8 +40,13 @@ async function init() {
   if (okStationNow) renderStationNow(stationNow.value.sample);
   else el("nowMeta").textContent = "Stazione non disponibile";
 
-  if (okHist) renderTempChart(stationHist.value.points || []);
-  else el("chartLegend").textContent = "Storico non disponibile (KV o cron non configurati / ancora vuoto)";
+  if (okHist) {
+    const pts = histCompact.value.points || [];
+    renderSparks(pts);
+    renderTempChartFromCompact(pts);
+  } else {
+    setText("chartLegend", "Storico non disponibile (KV/cron non configurati o ancora vuoto).");
+  }
 
   if (okForecast) {
     renderHourly(forecast.value);
@@ -96,7 +101,6 @@ function setText(id, text) {
 }
 
 function vpdToKpa(vpdInHg) {
-  // 1 inHg = 3.386389 kPa
   return vpdInHg * 3.386389;
 }
 
@@ -113,10 +117,7 @@ function renderStationNow(s) {
   const p = s?.pressure || {};
   const so = s?.solar || {};
   const r = s?.rain || {};
-  const i = s?.indoor || {};
-  const b = s?.battery || {};
 
-  // Hero
   setText("nowTemp", isNum(o.tempC) ? `${Math.round(o.tempC)}°` : "--°");
   setText("nowDesc", "Stazione meteo");
   const timeStr = s?.iso
@@ -125,39 +126,105 @@ function renderStationNow(s) {
   const windDir = degToCompass(w.directionDeg);
   setText("nowMeta", `Ultimo campione: ${timeStr} · Dir ${windDir} ${fmt(w.directionDeg,0)}°`);
 
-  // KPI principali
   setText("humNow", isNum(o.humidity) ? `${Math.round(o.humidity)}%` : "--%");
   setText("pressNow", isNum(p.relativeHpa) ? `${Math.round(p.relativeHpa)} hPa` : "-- hPa");
-  if (isNum(w.speedKmh) || isNum(w.gustKmh)) {
-    setText("windNow", `${fmt(w.speedKmh,0)} / ${fmt(w.gustKmh,0)} km/h`);
-  } else {
-    setText("windNow", "-- / -- km/h");
-  }
+  setText("windNow", (isNum(w.speedKmh) || isNum(w.gustKmh)) ? `${fmt(w.speedKmh,0)} / ${fmt(w.gustKmh,0)} km/h` : "-- / -- km/h");
 
-  // Sole e atmosfera
   setText("solarNow", isNum(so.solarWm2) ? `${fmt(so.solarWm2,1)} W/m²` : "-- W/m²");
   setText("uviNow", isNum(so.uvi) ? `${fmt(so.uvi,0)}` : "--");
   setText("dewNow", isNum(o.dewPointC) ? `${fmt(o.dewPointC,0)}°` : "--°");
 
   const vpdKpa = isNum(o.vpdInHg) ? vpdToKpa(o.vpdInHg) : null;
-  setText("vpdNow", isNum(vpdKpa) ? `${fmt(vpdKpa,3)} kPa` : "--");
+  setText("vpdNow", isNum(vpdKpa) ? `${fmt(vpdKpa,3)} kPa` : "-- kPa");
 
-  // Pioggia
   setText("rainRate", isNum(r.rateMmH) ? `${fmt(r.rateMmH,1)} mm/h` : "-- mm/h");
   setText("rain1h", isNum(r.mm1h) ? `${fmt(r.mm1h,1)} mm` : "-- mm");
   setText("rain24h", isNum(r.mm24h) ? `${fmt(r.mm24h,1)} mm` : "-- mm");
   setText("rainDaily", isNum(r.dailyMm) ? `${fmt(r.dailyMm,1)} mm` : "-- mm");
   setText("rainMonth", isNum(r.monthlyMm) ? `${fmt(r.monthlyMm,1)} mm` : "-- mm");
   setText("rainYear", isNum(r.yearlyMm) ? `${fmt(r.yearlyMm,1)} mm` : "-- mm");
-
-  // Indoor e batteria
-  setText("inTemp", isNum(i.tempC) ? `${fmt(i.tempC,0)}°` : "--°");
-  setText("inHum", isNum(i.humidity) ? `${fmt(i.humidity,0)}%` : "--%");
-  setText("battV", isNum(b.batteryV) ? `${fmt(b.batteryV,2)} V` : "-- V");
-  setText("capV", isNum(b.capacitorV) ? `${fmt(b.capacitorV,2)} V` : "-- V");
 }
 
-function renderTempChart(points) {
+function renderSparks(points) {
+  // points: {ts, t,h,p,w,s,u,r}
+  const t = points.map(p => p.t);
+  const h = points.map(p => p.h);
+  const p = points.map(p => p.p);
+  const w = points.map(p => p.w);
+  const s = points.map(p => p.s);
+  const u = points.map(p => p.u);
+  const r = points.map(p => p.r);
+
+  drawSpark("spHum", h);
+  drawSpark("spPress", p);
+  drawSpark("spWind", w);
+
+  drawSpark("spSolar", s);
+  drawSpark("spUvi", u);
+  // vpd e dew non sono nel compatto: li lasciamo vuoti per ora (se li vuoi, li aggiungo nel compatto)
+  // oppure li disegniamo con array vuoto
+  drawSpark("spVpd", []);
+  drawSpark("spDew", []);
+
+  drawSpark("spRainRate", r);
+  // per pioggia 1h/24h/daily/month/year dovremmo passare altri campi nel compatto; per ora restano vuoti
+  drawSpark("spRain1h", []);
+  drawSpark("spRain24h", []);
+  drawSpark("spRainDaily", []);
+  drawSpark("spRainMonth", []);
+  drawSpark("spRainYear", []);
+}
+
+function drawSpark(canvasId, values) {
+  const c = el(canvasId);
+  if (!c) return;
+  const ctx = c.getContext("2d");
+
+  const cssW = c.clientWidth || 240;
+  const cssH = 48;
+  const dpr = window.devicePixelRatio || 1;
+  c.width = Math.floor(cssW * dpr);
+  c.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const v = values.filter(isNum);
+  if (v.length < 2) {
+    // linea base leggera
+    ctx.globalAlpha = 0.25;
+    ctx.beginPath();
+    ctx.moveTo(0, cssH - 8);
+    ctx.lineTo(cssW, cssH - 8);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    return;
+  }
+
+  const min = Math.min(...v);
+  const max = Math.max(...v);
+  const range = max - min || 1;
+
+  const padX = 2;
+  const padY = 4;
+  const w = cssW - padX * 2;
+  const h = cssH - padY * 2;
+
+  ctx.beginPath();
+  let idx = 0;
+  for (const val of values) {
+    if (!isNum(val)) continue;
+    const x = padX + (idx / (v.length - 1)) * w;
+    const y = padY + (1 - (val - min) / range) * h;
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+    idx++;
+  }
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function renderTempChartFromCompact(points) {
   const canvas = el("chartTemp");
   const ctx = canvas.getContext("2d");
 
@@ -171,18 +238,14 @@ function renderTempChart(points) {
 
   ctx.clearRect(0, 0, cssW, cssH);
 
-  const temps = points
-    .map(p => p?.outdoor?.tempC)
-    .filter(isNum);
-
+  const temps = points.map(p => p.t).filter(isNum);
   if (temps.length < 2) {
-    setText("chartLegend", "Storico insufficiente: aspetta che si accumulino campioni (cron ogni 10 minuti).");
+    setText("chartLegend", "Storico insufficiente: aspetta campioni (cron ogni 10 minuti).");
     return;
   }
 
   const min = Math.min(...temps);
   const max = Math.max(...temps);
-
   const pad = 18;
   const w = cssW;
   const h = cssH;
@@ -197,15 +260,12 @@ function renderTempChart(points) {
   ctx.globalAlpha = 1;
 
   ctx.beginPath();
-  let idx = 0;
-  for (const p of points) {
-    const t = p?.outdoor?.tempC;
-    if (!isNum(t)) continue;
-    const x = pad + (idx / (temps.length - 1)) * usableW;
-    const y = pad + (1 - (t - min) / (max - min)) * usableH;
-    if (idx === 0) ctx.moveTo(x, y);
+  for (let i = 0; i < temps.length; i++) {
+    const t = temps[i];
+    const x = pad + (i / (temps.length - 1)) * usableW;
+    const y = pad + (1 - (t - min) / (max - min || 1)) * usableH;
+    if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
-    idx++;
   }
   ctx.lineWidth = 2;
   ctx.stroke();
@@ -213,6 +273,7 @@ function renderTempChart(points) {
   setText("chartLegend", `Temp 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · campioni ${temps.length}`);
 }
 
+/* previsioni: uguali a prima */
 function renderHourly(d) {
   const root = el("hourly");
   if (!root) return;
@@ -316,5 +377,3 @@ function iconFromCode(code) {
   if ([95,96,99].includes(c)) return "⛈️";
   return "☁️";
 }
-
-
