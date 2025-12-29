@@ -38,14 +38,14 @@ async function init() {
   setStatus("live", "Live");
 
   if (okStationNow) renderStationNow(stationNow.value.sample);
-  else el("nowMeta").textContent = "Stazione non disponibile";
+  else setText("nowMeta", "Stazione non disponibile");
 
   if (okHist) {
     const pts = histCompact.value.points || [];
     renderSparks(pts);
     renderTempChartFromCompact(pts);
   } else {
-    setText("chartLegend", "Storico non disponibile (KV/cron non configurati o ancora vuoto).");
+    setText("chartLegend", "Storico non disponibile (KV o cron non configurati / ancora vuoto).");
   }
 
   if (okForecast) {
@@ -120,9 +120,11 @@ function renderStationNow(s) {
 
   setText("nowTemp", isNum(o.tempC) ? `${Math.round(o.tempC)}°` : "--°");
   setText("nowDesc", "Stazione meteo");
+
   const timeStr = s?.iso
     ? new Date(s.iso).toLocaleTimeString("it-CH", { hour: "2-digit", minute: "2-digit" })
     : "—";
+
   const windDir = degToCompass(w.directionDeg);
   setText("nowMeta", `Ultimo campione: ${timeStr} · Dir ${windDir} ${fmt(w.directionDeg,0)}°`);
 
@@ -146,33 +148,25 @@ function renderStationNow(s) {
 }
 
 function renderSparks(points) {
-  // points: {ts, t,h,p,w,s,u,r}
-  const t = points.map(p => p.t);
-  const h = points.map(p => p.h);
-  const p = points.map(p => p.p);
-  const w = points.map(p => p.w);
-  const s = points.map(p => p.s);
-  const u = points.map(p => p.u);
-  const r = points.map(p => p.r);
+  const arr = (key) => points.map(p => p[key]);
 
-  drawSpark("spHum", h);
-  drawSpark("spPress", p);
-  drawSpark("spWind", w);
+  drawSpark("spHum", arr("h"));
+  drawSpark("spPress", arr("p"));
+  drawSpark("spWind", arr("w"));
 
-  drawSpark("spSolar", s);
-  drawSpark("spUvi", u);
-  // vpd e dew non sono nel compatto: li lasciamo vuoti per ora (se li vuoi, li aggiungo nel compatto)
-  // oppure li disegniamo con array vuoto
-  drawSpark("spVpd", []);
-  drawSpark("spDew", []);
+  drawSpark("spSolar", arr("s"));
+  drawSpark("spUvi", arr("u"));
+  drawSpark("spDew", arr("dew"));
 
-  drawSpark("spRainRate", r);
-  // per pioggia 1h/24h/daily/month/year dovremmo passare altri campi nel compatto; per ora restano vuoti
-  drawSpark("spRain1h", []);
-  drawSpark("spRain24h", []);
-  drawSpark("spRainDaily", []);
-  drawSpark("spRainMonth", []);
-  drawSpark("spRainYear", []);
+  const vpdKpa = points.map(p => (isNum(p.vpd) ? vpdToKpa(p.vpd) : null));
+  drawSpark("spVpd", vpdKpa);
+
+  drawSpark("spRainRate", arr("rr"));
+  drawSpark("spRain1h", arr("r1"));
+  drawSpark("spRain24h", arr("r24"));
+  drawSpark("spRainDaily", arr("rd"));
+  drawSpark("spRainMonth", arr("rm"));
+  drawSpark("spRainYear", arr("ry"));
 }
 
 function drawSpark(canvasId, values) {
@@ -189,39 +183,53 @@ function drawSpark(canvasId, values) {
 
   ctx.clearRect(0, 0, cssW, cssH);
 
-  const v = values.filter(isNum);
-  if (v.length < 2) {
-    // linea base leggera
+  const clean = values.filter(isNum);
+  if (clean.length < 2) {
     ctx.globalAlpha = 0.25;
     ctx.beginPath();
-    ctx.moveTo(0, cssH - 8);
-    ctx.lineTo(cssW, cssH - 8);
+    ctx.moveTo(6, cssH - 10);
+    ctx.lineTo(cssW - 6, cssH - 10);
     ctx.stroke();
+    ctx.globalAlpha = 0.35;
+    ctx.font = "11px system-ui";
+    ctx.fillText("in attesa storico", 8, 14);
     ctx.globalAlpha = 1;
     return;
   }
 
-  const min = Math.min(...v);
-  const max = Math.max(...v);
-  const range = max - min || 1;
+  const min = Math.min(...clean);
+  const max = Math.max(...clean);
+  const range = (max - min) || 1;
 
-  const padX = 2;
-  const padY = 4;
+  const padX = 6;
+  const padY = 6;
   const w = cssW - padX * 2;
   const h = cssH - padY * 2;
 
   ctx.beginPath();
-  let idx = 0;
-  for (const val of values) {
+  let started = false;
+  const n = values.length;
+
+  for (let i = 0; i < n; i++) {
+    const val = values[i];
     if (!isNum(val)) continue;
-    const x = padX + (idx / (v.length - 1)) * w;
+    const x = padX + (i / (n - 1)) * w;
     const y = padY + (1 - (val - min) / range) * h;
-    if (idx === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-    idx++;
+    if (!started) {
+      ctx.moveTo(x, y);
+      started = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
   }
+
   ctx.lineWidth = 2;
   ctx.stroke();
+
+  ctx.globalAlpha = 0.35;
+  ctx.font = "11px system-ui";
+  ctx.fillText(`${min.toFixed(0)}–${max.toFixed(0)}`, cssW - 56, 14);
+  ctx.globalAlpha = 1;
 }
 
 function renderTempChartFromCompact(points) {
@@ -246,6 +254,8 @@ function renderTempChartFromCompact(points) {
 
   const min = Math.min(...temps);
   const max = Math.max(...temps);
+  const range = (max - min) || 1;
+
   const pad = 18;
   const w = cssW;
   const h = cssH;
@@ -263,7 +273,7 @@ function renderTempChartFromCompact(points) {
   for (let i = 0; i < temps.length; i++) {
     const t = temps[i];
     const x = pad + (i / (temps.length - 1)) * usableW;
-    const y = pad + (1 - (t - min) / (max - min || 1)) * usableH;
+    const y = pad + (1 - (t - min) / range) * usableH;
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
@@ -273,7 +283,6 @@ function renderTempChartFromCompact(points) {
   setText("chartLegend", `Temp 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · campioni ${temps.length}`);
 }
 
-/* previsioni: uguali a prima */
 function renderHourly(d) {
   const root = el("hourly");
   if (!root) return;
