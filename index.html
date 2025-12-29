@@ -1,48 +1,333 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Stazione Meteo Sant’Antonino – Zona Trefogli</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stazione meteo – Sant’Antonino (zona Trefogli)</title>
+
+  <style>
+    :root{
+      --bg1:#050816;
+      --bg2:#0b1b3a;
+      --card:rgba(255,255,255,.06);
+      --card2:rgba(255,255,255,.08);
+      --stroke:rgba(255,255,255,.10);
+      --text:#eaf0ff;
+      --muted:rgba(234,240,255,.72);
+      --accent:#7c3aed;
+      --accent2:#22d3ee;
+      --shadow: 0 20px 60px rgba(0,0,0,.55);
+      --radius: 18px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.35), transparent 55%),
+        radial-gradient(900px 500px at 85% 15%, rgba(34,211,238,.25), transparent 55%),
+        radial-gradient(700px 450px at 50% 95%, rgba(34,211,238,.18), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      min-height:100vh;
+    }
+
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 44px 18px 70px;
+    }
+
+    .top{
+      display:flex;
+      gap:18px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom: 22px;
+    }
+
+    .brand{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+    }
+
+    .logo{
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(34,211,238,.85));
+      box-shadow: 0 14px 40px rgba(124,58,237,.30);
+      position:relative;
+      overflow:hidden;
+      flex:0 0 auto;
+      margin-top:4px;
+    }
+    .logo:before{
+      content:"";
+      position:absolute;
+      inset:-20px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.55), transparent 45%);
+      transform: rotate(12deg);
+    }
+
+    h1{
+      margin:0;
+      font-size: clamp(28px, 4vw, 40px);
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .subtitle{
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+      max-width: 62ch;
+      line-height:1.55;
+    }
+
+    .pill-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .pill{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      backdrop-filter: blur(10px);
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: .92rem;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 0 4px rgba(124,58,237,.14);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap:16px;
+      margin-top: 22px;
+    }
+    @media (max-width: 920px){
+      .grid{grid-template-columns: 1fr;}
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .card:before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: radial-gradient(800px 260px at 25% -10%, rgba(124,58,237,.22), transparent 55%),
+                  radial-gradient(700px 260px at 95% 5%, rgba(34,211,238,.16), transparent 60%);
+      pointer-events:none;
+    }
+    .card-inner{
+      position:relative;
+      padding: 22px;
+    }
+
+    .card h2{
+      margin:0 0 10px;
+      font-size: 1.15rem;
+      letter-spacing: -.01em;
+    }
+    .card p{
+      margin:0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 1.02rem;
+    }
+
+    .cta{
+      margin-top: 16px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      text-decoration:none;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,.16);
+      transition: transform .08s ease, filter .15s ease;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+    .btn:active{ transform: translateY(0px); }
+
+    .btn-primary{
+      background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(34,211,238,.85));
+      color: #061021;
+      box-shadow: 0 18px 45px rgba(34,211,238,.18), 0 18px 45px rgba(124,58,237,.18);
+    }
+    .btn-ghost{
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+    }
+
+    .mini{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .mini .box{
+      background: var(--card2);
+      border:1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 14px 14px;
+    }
+    .kv{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-top: 6px;
+      font-size: .98rem;
+      color: var(--muted);
+    }
+
+    .kv strong{
+      color: var(--text);
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+
+    .embed{
+      margin-top: 16px;
+      border-top: 1px solid var(--stroke);
+      padding-top: 16px;
+    }
+
+    .frame{
+      width:100%;
+      height: 520px;
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      background: rgba(0,0,0,.25);
+    }
+
+    footer{
+      margin-top: 22px;
+      color: rgba(234,240,255,.55);
+      font-size: .92rem;
+      line-height:1.5;
+    }
+  </style>
 </head>
 
-<body style="margin:0;font-family:system-ui;background:#0f172a;color:#e5e7eb;">
-  <div style="max-width:900px;margin:auto;padding:40px 20px;">
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Stazione meteo locale</h1>
+          <div class="subtitle">
+            Dati aggiornati in tempo reale dalla mia stazione a Sant’Antonino (zona Trefogli):
+            temperatura, umidità, vento, pressione e precipitazioni. Pagina pensata per essere leggibile da tutti.
+          </div>
 
-    <h1 style="font-size:2.2rem;margin-bottom:10px;">
-      Stazione meteo locale – Sant’Antonino (zona Trefogli)
-    </h1>
+          <div class="pill-row">
+            <div class="pill"><span class="dot"></span> aggiornamento continuo</div>
+            <div class="pill">grafici e storico</div>
+            <div class="pill">accesso pubblico</div>
+          </div>
+        </div>
+      </div>
 
-    <p style="font-size:1.1rem;line-height:1.6;color:#cbd5f5;">
-      Questa pagina mostra i dati meteo rilevati in tempo reale da una stazione
-      automatica installata a Sant’Antonino, nella zona di Trefogli.
-    </p>
-
-    <p style="font-size:1.05rem;line-height:1.6;color:#cbd5f5;">
-      I dati includono temperatura, umidità, vento, pressione atmosferica e
-      precipitazioni.
-    </p>
-
-    <div style="margin-top:30px;padding:25px;border-radius:14px;background:#020617;">
-      <h2>Dati meteo in tempo reale</h2>
-      <p style="color:#94a3b8;">
-        Clicca qui sotto per consultare i valori aggiornati e i grafici.
-      </p>
-
-      <a href="https://www.ecowitt.net/home/share?authorize=35GSW8"
-         target="_blank"
-         style="display:inline-block;margin-top:15px;
-                padding:14px 22px;background:#38bdf8;
-                color:#020617;font-weight:600;
-                text-decoration:none;border-radius:10px;">
-        Vai ai dati meteo live
-      </a>
+      <div class="pill">
+        posizione: <span style="color:var(--text);font-weight:700;">Sant’Antonino (zona Trefogli)</span>
+      </div>
     </div>
 
-    <footer style="margin-top:50px;font-size:0.9rem;color:#64748b;">
-      Dati a scopo informativo – stazione amatoriale
-    </footer>
+    <div class="grid">
+      <div class="card">
+        <div class="card-inner">
+          <h2>consultazione rapida</h2>
+          <p>
+            Se vuoi solo sapere che tempo fa adesso, apri i dati live: troverai valori aggiornati,
+            grafici orari e riepilogo giornaliero.
+          </p>
 
+          <div class="cta">
+            <a class="btn btn-primary" href="https://www.ecowitt.net/home/share?authorize=35GSW8" target="_blank" rel="noopener">
+              dati meteo live →
+            </a>
+            <a class="btn btn-ghost" href="#dettagli">
+              cosa misura la stazione
+            </a>
+          </div>
+
+          <div class="embed">
+            <h2 style="margin:0 0 10px;">anteprima (se supportata)</h2>
+            <p>
+              Se Ecowitt blocca l’anteprima, non è un problema: il pulsante sopra resta la via migliore.
+            </p>
+            <div style="margin-top:12px;">
+              <iframe class="frame" src="https://www.ecowitt.net/home/share?authorize=35GSW8" title="Dati meteo live (Ecowitt)"></iframe>
+            </div>
+          </div>
+
+          <footer>
+            Dati a scopo informativo. In futuro questa pagina può diventare autonoma (server locale e grafici personalizzati)
+            senza cambiare indirizzo.
+          </footer>
+        </div>
+      </div>
+
+      <div class="mini" id="dettagli">
+        <div class="box">
+          <h2 style="margin:0 0 8px;">misure principali</h2>
+          <div class="kv"><span>temperatura e umidità</span><strong>interno + esterno</strong></div>
+          <div class="kv"><span>vento</span><strong>velocità + direzione</strong></div>
+          <div class="kv"><span>pressione</span><strong>trend e variazioni</strong></div>
+          <div class="kv"><span>pioggia</span><strong>giorno / mese / anno</strong></div>
+          <div class="kv"><span>luce / UV</span><strong>intensità e indice</strong></div>
+        </div>
+
+        <div class="box">
+          <h2 style="margin:0 0 8px;">come leggerla</h2>
+          <p style="margin:0;color:var(--muted);line-height:1.6;">
+            Per decisioni rapide guarda temperatura, vento e pioggia oggi.
+            Per capire se cambia il tempo guarda trend pressione e grafico ultime ore.
+          </p>
+        </div>
+
+        <div class="box">
+          <h2 style="margin:0 0 8px;">link diretto</h2>
+          <p style="margin:0;color:var(--muted);line-height:1.6;">
+            Se vuoi solo aprire i dati: vai direttamente alla pagina live.
+          </p>
+          <div class="cta" style="margin-top:12px;">
+            <a class="btn btn-primary" href="https://www.ecowitt.net/home/share?authorize=35GSW8" target="_blank" rel="noopener">
+              apri dati live →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 </html>
