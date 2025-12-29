@@ -22,46 +22,52 @@
     </header>
 
     <main class="grid">
-      <section class="card hero" id="hero">
+      <section class="card hero">
         <div class="heroLeft">
-          <div class="heroIcon" id="heroIcon">☁️</div>
+          <div class="heroIcon" id="heroIcon">🌡️</div>
           <div class="heroText">
             <div class="heroTemp" id="nowTemp">--°</div>
-            <div class="heroDesc" id="nowDesc">--</div>
+            <div class="heroDesc" id="nowDesc">Stazione meteo</div>
             <div class="heroMeta" id="nowMeta">--</div>
           </div>
         </div>
 
         <div class="heroRight">
           <div class="kpi">
-            <div class="kpiLabel">Pioggia max oggi</div>
-            <div class="kpiValue" id="rainToday">--%</div>
+            <div class="kpiLabel">Umidità</div>
+            <div class="kpiValue" id="humNow">--%</div>
           </div>
           <div class="kpi">
             <div class="kpiLabel">Vento</div>
             <div class="kpiValue" id="windNow">-- km/h</div>
           </div>
           <div class="kpi">
-            <div class="kpiLabel">Min / Max oggi</div>
-            <div class="kpiValue" id="minMaxToday">--° / --°</div>
+            <div class="kpiLabel">Pressione</div>
+            <div class="kpiValue" id="pressNow">--</div>
           </div>
         </div>
       </section>
 
-      <section class="card" id="hourlyCard">
-        <div class="cardTitle">Prossime ore</div>
+      <section class="card">
+        <div class="cardTitle">Andamento ultime 48 ore (stazione)</div>
+        <canvas id="chartTemp" width="900" height="220"></canvas>
+        <div class="chartLegend" id="chartLegend">—</div>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">Prossime ore (previsioni)</div>
         <div class="hourly" id="hourly"></div>
       </section>
 
-      <section class="card" id="dailyCard">
-        <div class="cardTitle">7 giorni</div>
+      <section class="card">
+        <div class="cardTitle">7 giorni (previsioni)</div>
         <div class="daily" id="daily"></div>
       </section>
 
-      <section class="card mini" id="tipsCard">
+      <section class="card mini">
         <div class="cardTitle">Note</div>
         <div class="small" id="tips">
-          Dati dal tuo Worker con cache. Se l’API è limitata, vedi l’ultimo aggiornamento disponibile.
+          Se le previsioni sono limitate, vedi l’ultimo aggiornamento cache. Lo storico stazione viene salvato nel tuo KV.
         </div>
       </section>
     </main>
@@ -74,7 +80,6 @@
   <script src="./app.js"></script>
 </body>
 </html>
-
 
 
    
