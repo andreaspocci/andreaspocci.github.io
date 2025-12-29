@@ -24,7 +24,7 @@
     <main class="grid">
       <section class="card hero">
         <div class="heroLeft">
-          <div class="heroIcon" id="heroIcon">🌡️</div>
+          <div class="heroIcon">🌡️</div>
           <div class="heroText">
             <div class="heroTemp" id="nowTemp">--°</div>
             <div class="heroDesc" id="nowDesc">Stazione meteo</div>
@@ -33,17 +33,22 @@
         </div>
 
         <div class="heroRight">
-          <div class="kpi">
-            <div class="kpiLabel">Umidità</div>
+          <div class="kpi kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">💧</span><span class="kpiLabel">Umidità</span></div>
             <div class="kpiValue" id="humNow">--%</div>
+            <canvas class="spark" id="spHum" width="240" height="48"></canvas>
           </div>
-          <div class="kpi">
-            <div class="kpiLabel">Pressione</div>
+
+          <div class="kpi kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">🧭</span><span class="kpiLabel">Pressione</span></div>
             <div class="kpiValue" id="pressNow">-- hPa</div>
+            <canvas class="spark" id="spPress" width="240" height="48"></canvas>
           </div>
-          <div class="kpi">
-            <div class="kpiLabel">Vento / Raffica</div>
+
+          <div class="kpi kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">🌬️</span><span class="kpiLabel">Vento / Raffica</span></div>
             <div class="kpiValue" id="windNow">-- / -- km/h</div>
+            <canvas class="spark" id="spWind" width="240" height="48"></canvas>
           </div>
         </div>
       </section>
@@ -51,37 +56,75 @@
       <section class="card">
         <div class="cardTitle">Sole e atmosfera</div>
         <div class="kpiGrid">
-          <div class="kpiSmall"><div class="kpiLabel">Insolazione</div><div class="kpiValue" id="solarNow">-- W/m²</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">UV</div><div class="kpiValue" id="uviNow">--</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">VPD</div><div class="kpiValue" id="vpdNow">--</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">Rugiada</div><div class="kpiValue" id="dewNow">--°</div></div>
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">☀️</span><span class="kpiLabel">Insolazione</span></div>
+            <div class="kpiValue" id="solarNow">-- W/m²</div>
+            <canvas class="spark" id="spSolar" width="240" height="48"></canvas>
+          </div>
+
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">🟣</span><span class="kpiLabel">UV</span></div>
+            <div class="kpiValue" id="uviNow">--</div>
+            <canvas class="spark" id="spUvi" width="240" height="48"></canvas>
+          </div>
+
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">💨</span><span class="kpiLabel">VPD</span></div>
+            <div class="kpiValue" id="vpdNow">-- kPa</div>
+            <canvas class="spark" id="spVpd" width="240" height="48"></canvas>
+          </div>
+
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">💠</span><span class="kpiLabel">Rugiada</span></div>
+            <div class="kpiValue" id="dewNow">--°</div>
+            <canvas class="spark" id="spDew" width="240" height="48"></canvas>
+          </div>
         </div>
       </section>
 
       <section class="card">
         <div class="cardTitle">Pioggia</div>
         <div class="kpiGrid">
-          <div class="kpiSmall"><div class="kpiLabel">Rate</div><div class="kpiValue" id="rainRate">-- mm/h</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">1h</div><div class="kpiValue" id="rain1h">-- mm</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">24h</div><div class="kpiValue" id="rain24h">-- mm</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">Oggi</div><div class="kpiValue" id="rainDaily">-- mm</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">Mese</div><div class="kpiValue" id="rainMonth">-- mm</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">Anno</div><div class="kpiValue" id="rainYear">-- mm</div></div>
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">🌧️</span><span class="kpiLabel">Rate</span></div>
+            <div class="kpiValue" id="rainRate">-- mm/h</div>
+            <canvas class="spark" id="spRainRate" width="240" height="48"></canvas>
+          </div>
+
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">⏱️</span><span class="kpiLabel">1h</span></div>
+            <div class="kpiValue" id="rain1h">-- mm</div>
+            <canvas class="spark" id="spRain1h" width="240" height="48"></canvas>
+          </div>
+
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">🕛</span><span class="kpiLabel">24h</span></div>
+            <div class="kpiValue" id="rain24h">-- mm</div>
+            <canvas class="spark" id="spRain24h" width="240" height="48"></canvas>
+          </div>
+
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">📅</span><span class="kpiLabel">Oggi</span></div>
+            <div class="kpiValue" id="rainDaily">-- mm</div>
+            <canvas class="spark" id="spRainDaily" width="240" height="48"></canvas>
+          </div>
+
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">🗓️</span><span class="kpiLabel">Mese</span></div>
+            <div class="kpiValue" id="rainMonth">-- mm</div>
+            <canvas class="spark" id="spRainMonth" width="240" height="48"></canvas>
+          </div>
+
+          <div class="kpiSmall kpiWithSpark">
+            <div class="kpiTop"><span class="kpiIcon">🏁</span><span class="kpiLabel">Anno</span></div>
+            <div class="kpiValue" id="rainYear">-- mm</div>
+            <canvas class="spark" id="spRainYear" width="240" height="48"></canvas>
+          </div>
         </div>
       </section>
 
       <section class="card">
-        <div class="cardTitle">Indoor e batteria</div>
-        <div class="kpiGrid">
-          <div class="kpiSmall"><div class="kpiLabel">Temp indoor</div><div class="kpiValue" id="inTemp">--°</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">Umidità indoor</div><div class="kpiValue" id="inHum">--%</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">Batteria</div><div class="kpiValue" id="battV">-- V</div></div>
-          <div class="kpiSmall"><div class="kpiLabel">Condensatore</div><div class="kpiValue" id="capV">-- V</div></div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="cardTitle">Andamento ultime 48 ore (temperatura outdoor)</div>
+        <div class="cardTitle">Andamento ultime 48 ore (temperatura)</div>
         <canvas id="chartTemp" width="900" height="220"></canvas>
         <div class="chartLegend" id="chartLegend">—</div>
       </section>
@@ -98,8 +141,8 @@
 
       <section class="card mini">
         <div class="cardTitle">Note</div>
-        <div class="small" id="tips">
-          Dati stazione da Ecowitt (metriche convertite). Storico salvato nel KV. Previsioni da Open-Meteo con cache.
+        <div class="small">
+          I mini grafici mostrano l’andamento delle ultime 48 ore (quando lo storico si popola). Previsioni da Open-Meteo (oggi limitate).
         </div>
       </section>
     </main>
@@ -112,6 +155,7 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
 
 
 
