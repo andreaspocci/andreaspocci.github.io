@@ -38,18 +38,50 @@
             <div class="kpiValue" id="humNow">--%</div>
           </div>
           <div class="kpi">
-            <div class="kpiLabel">Vento</div>
-            <div class="kpiValue" id="windNow">-- km/h</div>
-          </div>
-          <div class="kpi">
             <div class="kpiLabel">Pressione</div>
             <div class="kpiValue" id="pressNow">-- hPa</div>
+          </div>
+          <div class="kpi">
+            <div class="kpiLabel">Vento / Raffica</div>
+            <div class="kpiValue" id="windNow">-- / -- km/h</div>
           </div>
         </div>
       </section>
 
       <section class="card">
-        <div class="cardTitle">Andamento ultime 48 ore (stazione)</div>
+        <div class="cardTitle">Sole e atmosfera</div>
+        <div class="kpiGrid">
+          <div class="kpiSmall"><div class="kpiLabel">Insolazione</div><div class="kpiValue" id="solarNow">-- W/m²</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">UV</div><div class="kpiValue" id="uviNow">--</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">VPD</div><div class="kpiValue" id="vpdNow">--</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">Rugiada</div><div class="kpiValue" id="dewNow">--°</div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">Pioggia</div>
+        <div class="kpiGrid">
+          <div class="kpiSmall"><div class="kpiLabel">Rate</div><div class="kpiValue" id="rainRate">-- mm/h</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">1h</div><div class="kpiValue" id="rain1h">-- mm</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">24h</div><div class="kpiValue" id="rain24h">-- mm</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">Oggi</div><div class="kpiValue" id="rainDaily">-- mm</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">Mese</div><div class="kpiValue" id="rainMonth">-- mm</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">Anno</div><div class="kpiValue" id="rainYear">-- mm</div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">Indoor e batteria</div>
+        <div class="kpiGrid">
+          <div class="kpiSmall"><div class="kpiLabel">Temp indoor</div><div class="kpiValue" id="inTemp">--°</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">Umidità indoor</div><div class="kpiValue" id="inHum">--%</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">Batteria</div><div class="kpiValue" id="battV">-- V</div></div>
+          <div class="kpiSmall"><div class="kpiLabel">Condensatore</div><div class="kpiValue" id="capV">-- V</div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">Andamento ultime 48 ore (temperatura outdoor)</div>
         <canvas id="chartTemp" width="900" height="220"></canvas>
         <div class="chartLegend" id="chartLegend">—</div>
       </section>
@@ -67,7 +99,7 @@
       <section class="card mini">
         <div class="cardTitle">Note</div>
         <div class="small" id="tips">
-          Dati stazione da Ecowitt. Storico salvato nel KV. Previsioni da Open-Meteo con cache.
+          Dati stazione da Ecowitt (metriche convertite). Storico salvato nel KV. Previsioni da Open-Meteo con cache.
         </div>
       </section>
     </main>
@@ -80,6 +112,7 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
 
 
    
