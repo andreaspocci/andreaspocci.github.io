@@ -6,15 +6,20 @@
   <title>Meteo Sant’Antonino</title>
   <style>
     :root{
-      --bg1:#070b17; --bg2:#101a35; --card: rgba(255,255,255,.06);
-      --card2: rgba(255,255,255,.08); --stroke: rgba(255,255,255,.12);
-      --text: rgba(255,255,255,.92); --muted: rgba(255,255,255,.62);
-      --muted2: rgba(255,255,255,.45); --shadow: 0 20px 80px rgba(0,0,0,.55);
+      --bg1:#070b17; --bg2:#101a35;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.62);
+      --muted2: rgba(255,255,255,.45);
+      --shadow: 0 20px 80px rgba(0,0,0,.55);
       --r: 22px;
     }
     *{box-sizing:border-box}
     body{
-      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       color:var(--text);
       min-height:100vh;
       background:
@@ -33,7 +38,7 @@
       background:#ff5a5a; box-shadow:0 0 0 6px rgba(255,90,90,.12);
     }
     .title{display:flex; flex-direction:column; line-height:1.1}
-    .title .h{font-size:14px; color:var(--text)}
+    .title .h{font-size:14px}
     .title .s{font-size:12px; color:var(--muted)}
     .pills{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
     .pill{
@@ -41,25 +46,37 @@
       border:1px solid var(--stroke); color:var(--muted); font-size:12px;
       backdrop-filter: blur(10px);
     }
-    .pill strong{color:var(--text); font-weight:600}
+    .pill .v{color:var(--text); font-weight:600}
     .grid{display:grid; grid-template-columns: 1.35fr .65fr; gap:16px}
     @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
     .panel{
-      border-radius:var(--r); background: linear-gradient(180deg, var(--card2), var(--card));
-      border:1px solid var(--stroke); box-shadow: var(--shadow);
-      padding:18px; position:relative; overflow:hidden;
+      border-radius:var(--r);
+      background: linear-gradient(180deg, var(--card2), var(--card));
+      border:1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      padding:18px;
+      position:relative;
+      overflow:hidden;
       backdrop-filter: blur(14px);
     }
     .panel:before{
-      content:""; position:absolute; inset:-2px;
+      content:"";
+      position:absolute;
+      inset:-2px;
       background: radial-gradient(600px 300px at 40% 0%, rgba(255,255,255,.10), transparent 60%);
       pointer-events:none;
     }
     .hero{
-      display:grid; grid-template-columns: 1.2fr .8fr; gap:16px; align-items:center;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:16px;
+      align-items:center;
       min-height:220px;
     }
     @media (max-width: 720px){ .hero{grid-template-columns:1fr} }
+    .temp{font-size:64px; letter-spacing:-1px; margin:0}
+    .sub{margin-top:4px; color:var(--muted); font-size:14px}
+    .statusline{margin-top:10px; color:var(--muted2); font-size:12px}
     .kpiRow{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
     .kpi{
       padding:10px 12px; border-radius:16px; background:rgba(0,0,0,.18);
@@ -68,22 +85,12 @@
     }
     .kpi .l{font-size:12px; color:var(--muted)}
     .kpi .v{font-size:18px; color:var(--text); margin-top:4px}
-    .temp{
-      font-size:64px; letter-spacing:-1px; margin:0;
-    }
-    .sub{
-      margin-top:4px; color:var(--muted); font-size:14px;
-    }
-    .statusline{margin-top:10px; color:var(--muted2); font-size:12px}
     .wxIcon{
       width:140px; height:140px; margin-left:auto; margin-right:18px;
       filter: drop-shadow(0 18px 40px rgba(0,0,0,.5));
       opacity:.95;
     }
-    .miniGrid{
-      display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px;
-      margin-top:8px;
-    }
+    .miniGrid{display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; margin-top:8px}
     .mini{
       padding:12px; border-radius:18px; background:rgba(0,0,0,.16);
       border:1px solid rgba(255,255,255,.10);
@@ -91,9 +98,7 @@
     .mini .l{font-size:12px; color:var(--muted)}
     .mini .v{font-size:18px; margin-top:6px}
     .sectionTitle{font-size:13px; color:var(--muted); margin:0 0 10px 0}
-    .forecastRow{
-      display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:10px;
-    }
+    .forecastRow{display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:10px}
     @media (max-width: 920px){ .forecastRow{grid-template-columns: repeat(3, minmax(0,1fr));} }
     .fcell{
       padding:12px; border-radius:18px; background:rgba(0,0,0,.16);
@@ -110,12 +115,12 @@
       color: rgba(255,255,255,.85);
       font-size:12px;
       display:none;
+      word-break: break-word;
     }
     .debug{
       margin-top:12px; color:rgba(255,255,255,.35); font-size:11px;
       word-break: break-all;
     }
-    a{color:inherit}
   </style>
 </head>
 <body>
@@ -129,9 +134,9 @@
         </div>
       </div>
       <div class="pills">
-        <div class="pill">Ora <strong id="nowTime">--:--</strong></div>
-        <div class="pill">Data <strong id="nowDate">--</strong></div>
-        <div class="pill" id="onlinePill">Stato <strong id="stateTxt">--</strong></div>
+        <div class="pill">Ora <span class="v" id="nowTime">--:--</span></div>
+        <div class="pill">Data <span class="v" id="nowDate">--</span></div>
+        <div class="pill">Stato <span class="v" id="stateTxt">--</span></div>
       </div>
     </div>
 
@@ -160,9 +165,7 @@
 
         <div style="margin-top:14px;">
           <p class="sectionTitle">Prossime ore</p>
-          <div class="forecastRow" id="forecastRow">
-            <!-- cells injected -->
-          </div>
+          <div class="forecastRow" id="forecastRow"></div>
         </div>
 
         <div class="debug" id="debugLine"></div>
@@ -183,8 +186,7 @@
   </div>
 
 <script>
-  // 1) METTI QUI IL TUO WORKER BASE, E DEVE ESSERE ASSOLUTO
-  // esempio: https://dry-frog-bb05.spocci.workers.dev
+  // Cambia solo questa riga
   const WORKER_BASE = "https://dry-frog-bb05.spocci.workers.dev";
 
   const ENDPOINT_NOW = WORKER_BASE.replace(/\/$/, "") + "/station/now";
@@ -194,18 +196,17 @@
 
   function fmt1(n){ return (Math.round(n * 10) / 10).toFixed(1); }
   function safeNum(v){
-    // non usare if(!v) perché 0 è un valore valido
     return (v === null || v === undefined || Number.isNaN(v)) ? null : Number(v);
   }
 
   function setOnline(isOnline){
     el("stateTxt").textContent = isOnline ? "Online" : "Offline";
-    el("dot").style.background = isOnline ? "#34d399" : "#ff5a5a";
-    el("dot").style.boxShadow = isOnline ? "0 0 0 6px rgba(52,211,153,.12)" : "0 0 0 6px rgba(255,90,90,.12)";
+    const dot = el("dot");
+    dot.style.background = isOnline ? "#34d399" : "#ff5a5a";
+    dot.style.boxShadow = isOnline ? "0 0 0 6px rgba(52,211,153,.12)" : "0 0 0 6px rgba(255,90,90,.12)";
   }
 
   function iconSvg(kind){
-    // icone semplici, coerenti (cloud / sun / rain)
     const cloud = `
       <svg class="wxIcon" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M44 90h49c14 0 25-10 25-23s-11-23-25-23c-3 0-6 1-9 2C80 32 68 22 53 22 36 22 22 36 22 53c0 2 0 4 1 6C13 63 6 72 6 82c0 13 11 23 24 23h14Z" stroke="rgba(255,255,255,.92)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -226,8 +227,8 @@
   }
 
   function pickKind(sample){
-    const rainRate = safeNum(sample?.outdoor?.rain?.rateMmH ?? sample?.rain?.rateMmH);
-    const solar = safeNum(sample?.outdoor?.solar?.solarWm2 ?? sample?.solar?.solarWm2);
+    const rainRate = safeNum(sample?.rain?.rateMmH);
+    const solar = safeNum(sample?.solar?.solarWm2);
     if (rainRate !== null && rainRate > 0.2) return "rain";
     if (solar !== null && solar > 180) return "sun";
     return "cloud";
@@ -239,12 +240,41 @@
     w.style.display = "block";
   }
   function hideWarn(){
-    const w = el("warnBox");
-    w.style.display = "none";
+    el("warnBox").style.display = "none";
   }
 
-  function renderStation(sample, meta){
-    // campi normalizzati che mi hai incollato
+  async function fetchJson(url, timeoutMs=8000){
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try{
+      const r = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  function resetUI(){
+    el("headline").textContent = "Dati non disponibili";
+    el("tempMain").textContent = "--°";
+    el("feelsLine").textContent = "--";
+    el("updatedLine").textContent = "--";
+    el("hum").textContent = "--%";
+    el("wind").textContent = "-- km/h";
+    el("press").textContent = "-- hPa";
+    el("rain").textContent = "-- mm";
+    el("dew").textContent = "-- °C";
+    el("gust").textContent = "-- km/h";
+    el("wdir").textContent = "--°";
+    el("uv").textContent = "--";
+    el("sol").textContent = "-- W/m²";
+    el("vpd").textContent = "-- inHg";
+    el("iconHolder").innerHTML = iconSvg("cloud");
+  }
+
+  function renderStation(payload){
+    const sample = payload?.sample || payload;
     const t = safeNum(sample?.outdoor?.tempC);
     const feels = safeNum(sample?.outdoor?.feelsLikeC);
     const app = safeNum(sample?.outdoor?.appTempC);
@@ -259,40 +289,26 @@
     const uv = safeNum(sample?.solar?.uvi);
     const rainDaily = safeNum(sample?.rain?.dailyMm);
 
-    // qui NON devi usare if(!t) perché 0°C è valido
     const ok = (t !== null);
-
     setOnline(ok);
 
-    const iso = meta?.iso || null;
-    el("debugLine").textContent = "now: " + ENDPOINT_NOW;
+    el("debugLine").textContent = "now: " + ENDPOINT_NOW + " | forecast: " + ENDPOINT_FORECAST;
 
     if(!ok){
-      el("headline").textContent = "Dati non disponibili";
-      el("tempMain").textContent = "--°";
-      el("feelsLine").textContent = "--";
-      el("updatedLine").textContent = "--";
-      el("hum").textContent = "--%";
-      el("wind").textContent = "-- km/h";
-      el("press").textContent = "-- hPa";
-      el("rain").textContent = "-- mm";
-      el("dew").textContent = "-- °C";
-      el("gust").textContent = "-- km/h";
-      el("wdir").textContent = "--°";
-      el("uv").textContent = "--";
-      el("sol").textContent = "-- W/m²";
-      el("vpd").textContent = "-- inHg";
-      el("iconHolder").innerHTML = iconSvg("cloud");
-      showWarn("Nessun dato stazione. Se vedi questo con 0°C fuori, stavi trattando 0 come assenza: ora è corretto.");
+      resetUI();
+      showWarn("Dati stazione non disponibili.");
       return;
     }
 
     hideWarn();
-
     el("headline").textContent = "Ora";
     el("tempMain").textContent = fmt1(t) + "°";
     el("feelsLine").textContent = "Feels " + fmt1(feels ?? t) + "°  |  App " + fmt1(app ?? feels ?? t) + "°";
-    el("updatedLine").textContent = iso ? ("Aggiornato: " + new Date(iso).toLocaleString("it-CH")) : "Aggiornato: --";
+
+    const iso = payload?.iso || sample?.iso || null;
+    el("updatedLine").textContent = iso
+      ? ("Aggiornato: " + new Date(iso).toLocaleString("it-CH"))
+      : "Aggiornato: --";
 
     el("hum").textContent = (hum === null ? "--" : Math.round(hum)) + "%";
     el("wind").textContent = (ws === null ? "--" : Math.round(ws)) + " km/h";
@@ -306,73 +322,55 @@
     el("sol").textContent = (sol === null ? "--" : Math.round(sol)) + " W/m²";
     el("vpd").textContent = (vpd === null ? "--" : fmt1(vpd)) + " inHg";
 
-    const kind = pickKind(sample);
-    el("iconHolder").innerHTML = iconSvg(kind);
+    el("iconHolder").innerHTML = iconSvg(pickKind(sample));
 
-    // cache last good
     try{
-      localStorage.setItem("last_good_station", JSON.stringify({ts: Date.now(), sample, meta}));
-    }catch(e){}
+      localStorage.setItem("last_good_station", JSON.stringify({ ts: Date.now(), payload }));
+    } catch (_) {}
   }
 
   function renderForecast(payload){
-    // non so la tua struttura esatta di /forecast: quindi faccio fallback elegante
-    el("debugLine").textContent = el("debugLine").textContent + "  |  forecast: " + ENDPOINT_FORECAST;
-
     const row = el("forecastRow");
     row.innerHTML = "";
 
-    // Provo vari formati comuni: se non li trova, non rompe la pagina
     const hours = payload?.hours || payload?.hourly || payload?.data?.hours || null;
-    if(!hours || !Array.isArray(hours) || hours.length === 0){
-      // celle placeholder non “offline”, solo vuote
+    if(!Array.isArray(hours) || hours.length === 0){
       for(let i=0;i<6;i++){
         const c = document.createElement("div");
         c.className = "fcell";
-        c.innerHTML = `<div class="t">--:--</div>${iconSvg("cloud").replace('class="wxIcon"', '')}<div class="v">--°</div>`;
+        c.innerHTML = `<div class="t">--:--</div>${iconSvg("cloud").replace('class="wxIcon"', "")}<div class="v">--°</div>`;
         row.appendChild(c);
       }
       return;
     }
 
-    // Prendo 6 ore
-    const take = hours.slice(0, 6);
-    take.forEach(h => {
-      const timeIso = h?.iso || h?.time || h?.ts || null;
+    hours.slice(0, 6).forEach(h => {
+      const timeIso = h?.iso || h?.time || null;
       const t = safeNum(h?.tempC ?? h?.temperatureC ?? h?.temperature ?? h?.temp);
       const rain = safeNum(h?.rainMm ?? h?.precipMm ?? h?.precip ?? h?.rain);
       const solar = safeNum(h?.solarWm2 ?? h?.solar);
-      let kind = "cloud";
-      if(rain !== null && rain > 0.2) kind = "rain";
-      else if(solar !== null && solar > 180) kind = "sun";
 
-      const label = timeIso ? new Date(timeIso).toLocaleTimeString("it-CH",{hour:"2-digit",minute:"2-digit"}) : "--:--";
+      let kind = "cloud";
+      if (rain !== null && rain > 0.2) kind = "rain";
+      else if (solar !== null && solar > 180) kind = "sun";
+
+      const label = timeIso
+        ? new Date(timeIso).toLocaleTimeString("it-CH",{hour:"2-digit",minute:"2-digit"})
+        : "--:--";
 
       const c = document.createElement("div");
       c.className = "fcell";
       c.innerHTML = `
         <div class="t">${label}</div>
-        ${iconSvg(kind).replace('class="wxIcon"', '')}
+        ${iconSvg(kind).replace('class="wxIcon"', "")}
         <div class="v">${t === null ? "--" : fmt1(t)}°</div>
       `;
       row.appendChild(c);
     });
 
     try{
-      localStorage.setItem("last_good_forecast", JSON.stringify({ts: Date.now(), payload}));
-    }catch(e){}
-  }
-
-  async function fetchJson(url, timeoutMs=8000){
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), timeoutMs);
-    try{
-      const r = await fetch(url, {signal: ctrl.signal, cache:"no-store"});
-      if(!r.ok) throw new Error("HTTP " + r.status);
-      return await r.json();
-    } finally {
-      clearTimeout(t);
-    }
+      localStorage.setItem("last_good_forecast", JSON.stringify({ ts: Date.now(), payload }));
+    } catch (_) {}
   }
 
   async function loadAll(){
@@ -380,47 +378,44 @@
     el("nowTime").textContent = d.toLocaleTimeString("it-CH",{hour:"2-digit",minute:"2-digit"});
     el("nowDate").textContent = d.toLocaleDateString("it-CH",{day:"2-digit",month:"short"});
 
-    // tenta rete
     try{
       const now = await fetchJson(ENDPOINT_NOW);
-      // compat: se la tua risposta è {ok:true,sample:{...}} come mi hai incollato
-      renderStation(now.sample || now, {iso: now.iso || now.sample?.iso || now.sample?.ts ? now.iso : now.iso});
-    }catch(e){
+      renderStation(now);
+    } catch (e){
       setOnline(false);
-      // fallback: ultimo dato valido
+      resetUI();
       try{
-        const s = JSON.parse(localStorage.getItem("last_good_station") || "null");
-        if(s?.sample){
-          renderStation(s.sample, s.meta || {});
-          showWarn("Rete non disponibile. Mostro l’ultimo dato salvato.");
-        }else{
-          renderStation({}, {});
-          showWarn("Errore fetch stazione: " + String(e.message || e));
+        const cached = JSON.parse(localStorage.getItem("last_good_station") || "null");
+        if(cached?.payload){
+          renderStation(cached.payload);
+          showWarn("Errore rete. Mostro l’ultimo dato salvato.");
+        } else {
+          showWarn("Errore fetch stazione: " + String(e?.message || e));
         }
-      }catch(_){
-        renderStation({}, {});
-        showWarn("Errore fetch stazione: " + String(e.message || e));
+      } catch (_) {
+        showWarn("Errore fetch stazione: " + String(e?.message || e));
       }
     }
 
     try{
       const fc = await fetchJson(ENDPOINT_FORECAST);
       renderForecast(fc);
-    }catch(e){
+    } catch (e){
       try{
-        const f = JSON.parse(localStorage.getItem("last_good_forecast") || "null");
-        if(f?.payload){
-          renderForecast(f.payload);
+        const cached = JSON.parse(localStorage.getItem("last_good_forecast") || "null");
+        if(cached?.payload){
+          renderForecast(cached.payload);
           showWarn("Forecast non disponibile. Mostro l’ultimo forecast salvato.");
-        }else{
+        } else {
           renderForecast({});
         }
-      }catch(_){
+      } catch (_) {
         renderForecast({});
       }
     }
   }
 
+  resetUI();
   loadAll();
   setInterval(loadAll, 60_000);
 </script>
