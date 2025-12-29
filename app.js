@@ -35,17 +35,13 @@ async function init() {
     return;
   }
 
-  // se almeno uno funziona, la pagina è "online" (ma segnaliamo cosa è KO nel footer)
   setStatus("live", "Live");
 
   if (okStationNow) renderStationNow(stationNow.value.sample);
-  else {
-    el("nowTemp").textContent = "--°";
-    el("nowMeta").textContent = "Stazione non disponibile";
-  }
+  else el("nowMeta").textContent = "Stazione non disponibile";
 
   if (okHist) renderTempChart(stationHist.value.points || []);
-  else el("chartLegend").textContent = "Storico non disponibile (KV o cron non configurati)";
+  else el("chartLegend").textContent = "Storico non disponibile (KV o cron non configurati / ancora vuoto)";
 
   if (okForecast) {
     renderHourly(forecast.value);
@@ -85,20 +81,45 @@ function setStatus(mode, text) {
   }
 }
 
+function fmt(n, digits = 0) {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return n.toFixed(digits);
+}
+
 function renderStationNow(s) {
-  const temp = s?.tempC;
-  const hum = s?.humidity;
-  const wind = s?.windKmh;
-  const press = s?.pressure;
+  const o = s.outdoor || {};
+  const w = s.wind || {};
+  const p = s.pressure || {};
+  const so = s.solar || {};
+  const r = s.rain || {};
+  const i = s.indoor || {};
+  const b = s.battery || {};
 
-  el("nowTemp").textContent = temp == null ? "--°" : `${Math.round(temp)}°`;
-  el("nowMeta").textContent = s?.iso
-    ? `Ultimo campione: ${new Date(s.iso).toLocaleString("it-CH", { hour:"2-digit", minute:"2-digit" })}`
-    : "—";
+  el("nowTemp").textContent = o.tempC == null ? "--°" : `${Math.round(o.tempC)}°`;
+  el("nowDesc").textContent = `Stazione meteo · percepita ${fmt(o.feelsLikeC,0)}°`;
+  el("nowMeta").textContent = `Ultimo campione: ${new Date(s.iso).toLocaleTimeString("it-CH", { hour:"2-digit", minute:"2-digit" })} · Direzione ${fmt(w.directionDeg,0)}°`;
 
-  el("humNow").textContent = hum == null ? "--%" : `${Math.round(hum)}%`;
-  el("windNow").textContent = wind == null ? "-- km/h" : `${Math.round(wind)} km/h`;
-  el("pressNow").textContent = press == null ? "-- hPa" : `${Math.round(press)} hPa`;
+  el("humNow").textContent = o.humidity == null ? "--%" : `${Math.round(o.humidity)}%`;
+  el("pressNow").textContent = p.relativeHpa == null ? "-- hPa" : `${Math.round(p.relativeHpa)} hPa`;
+  el("windNow").textContent =
+    w.speedKmh == null ? "-- / -- km/h" : `${fmt(w.speedKmh,0)} / ${fmt(w.gustKmh,0)} km/h`;
+
+  el("solarNow").textContent = so.solarWm2 == null ? "-- W/m²" : `${fmt(so.solarWm2,1)} W/m²`;
+  el("uviNow").textContent = so.uvi == null ? "--" : `${fmt(so.uvi,0)}`;
+  el("vpdNow").textContent = o.vpdInHg == null ? "--" : `${fmt(o.vpdInHg,3)} inHg`;
+  el("dewNow").textContent = o.dewPointC == null ? "--°" : `${fmt(o.dewPointC,0)}°`;
+
+  el("rainRate").textContent = r.rateMmH == null ? "-- mm/h" : `${fmt(r.rateMmH,1)} mm/h`;
+  el("rain1h").textContent = r.mm1h == null ? "-- mm" : `${fmt(r.mm1h,1)} mm`;
+  el("rain24h").textContent = r.mm24h == null ? "-- mm" : `${fmt(r.mm24h,1)} mm`;
+  el("rainDaily").textContent = r.dailyMm == null ? "-- mm" : `${fmt(r.dailyMm,1)} mm`;
+  el("rainMonth").textContent = r.monthlyMm == null ? "-- mm" : `${fmt(r.monthlyMm,1)} mm`;
+  el("rainYear").textContent = r.yearlyMm == null ? "-- mm" : `${fmt(r.yearlyMm,1)} mm`;
+
+  el("inTemp").textContent = i.tempC == null ? "--°" : `${fmt(i.tempC,0)}°`;
+  el("inHum").textContent = i.humidity == null ? "--%" : `${fmt(i.humidity,0)}%`;
+  el("battV").textContent = b.batteryV == null ? "-- V" : `${fmt(b.batteryV,2)} V`;
+  el("capV").textContent = b.capacitorV == null ? "-- V" : `${fmt(b.capacitorV,2)} V`;
 }
 
 function renderTempChart(points) {
@@ -115,21 +136,24 @@ function renderTempChart(points) {
 
   ctx.clearRect(0, 0, cssW, cssH);
 
-  const temps = points.map(p => p.tempC).filter(v => typeof v === "number" && isFinite(v));
+  const temps = points
+    .map(p => p?.outdoor?.tempC)
+    .filter(v => typeof v === "number" && isFinite(v));
+
   if (temps.length < 2) {
-    el("chartLegend").textContent = "Storico insufficiente: attiva il cron o aspetta che si accumulino campioni.";
+    el("chartLegend").textContent = "Storico insufficiente: aspetta che si accumulino campioni (cron ogni 10 minuti).";
     return;
   }
 
   const min = Math.min(...temps);
   const max = Math.max(...temps);
+
   const pad = 18;
   const w = cssW;
   const h = cssH;
   const usableW = w - pad * 2;
   const usableH = h - pad * 2;
 
-  // baseline
   ctx.globalAlpha = 0.35;
   ctx.beginPath();
   ctx.moveTo(pad, h - pad);
@@ -137,11 +161,10 @@ function renderTempChart(points) {
   ctx.stroke();
   ctx.globalAlpha = 1;
 
-  // linea
   ctx.beginPath();
   let idx = 0;
-  for (let i = 0; i < points.length; i++) {
-    const t = points[i].tempC;
+  for (const p of points) {
+    const t = p?.outdoor?.tempC;
     if (typeof t !== "number" || !isFinite(t)) continue;
     const x = pad + (idx / (temps.length - 1)) * usableW;
     const y = pad + (1 - (t - min) / (max - min)) * usableH;
@@ -256,4 +279,5 @@ function iconFromCode(code) {
   if ([95,96,99].includes(c)) return "⛈️";
   return "☁️";
 }
+
 
