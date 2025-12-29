@@ -4,204 +4,426 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Meteo Sant’Antonino</title>
-  <link rel="stylesheet" href="./style.css" />
-  <link rel="icon" href="data:,">
+  <style>
+    :root{
+      --bg1:#070b17; --bg2:#101a35; --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.08); --stroke: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92); --muted: rgba(255,255,255,.62);
+      --muted2: rgba(255,255,255,.45); --shadow: 0 20px 80px rgba(0,0,0,.55);
+      --r: 22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      min-height:100vh;
+      background:
+        radial-gradient(1200px 700px at 15% 10%, #1a2f6b 0%, transparent 60%),
+        radial-gradient(900px 600px at 85% 25%, #5a2b7a 0%, transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+    }
+    .wrap{max-width:1200px; margin:28px auto; padding:0 16px}
+    .topbar{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      margin-bottom:18px;
+    }
+    .brand{display:flex; align-items:center; gap:10px}
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      background:#ff5a5a; box-shadow:0 0 0 6px rgba(255,90,90,.12);
+    }
+    .title{display:flex; flex-direction:column; line-height:1.1}
+    .title .h{font-size:14px; color:var(--text)}
+    .title .s{font-size:12px; color:var(--muted)}
+    .pills{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .pill{
+      padding:10px 12px; border-radius:999px; background:var(--card);
+      border:1px solid var(--stroke); color:var(--muted); font-size:12px;
+      backdrop-filter: blur(10px);
+    }
+    .pill strong{color:var(--text); font-weight:600}
+    .grid{display:grid; grid-template-columns: 1.35fr .65fr; gap:16px}
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+    .panel{
+      border-radius:var(--r); background: linear-gradient(180deg, var(--card2), var(--card));
+      border:1px solid var(--stroke); box-shadow: var(--shadow);
+      padding:18px; position:relative; overflow:hidden;
+      backdrop-filter: blur(14px);
+    }
+    .panel:before{
+      content:""; position:absolute; inset:-2px;
+      background: radial-gradient(600px 300px at 40% 0%, rgba(255,255,255,.10), transparent 60%);
+      pointer-events:none;
+    }
+    .hero{
+      display:grid; grid-template-columns: 1.2fr .8fr; gap:16px; align-items:center;
+      min-height:220px;
+    }
+    @media (max-width: 720px){ .hero{grid-template-columns:1fr} }
+    .kpiRow{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    .kpi{
+      padding:10px 12px; border-radius:16px; background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      min-width:150px;
+    }
+    .kpi .l{font-size:12px; color:var(--muted)}
+    .kpi .v{font-size:18px; color:var(--text); margin-top:4px}
+    .temp{
+      font-size:64px; letter-spacing:-1px; margin:0;
+    }
+    .sub{
+      margin-top:4px; color:var(--muted); font-size:14px;
+    }
+    .statusline{margin-top:10px; color:var(--muted2); font-size:12px}
+    .wxIcon{
+      width:140px; height:140px; margin-left:auto; margin-right:18px;
+      filter: drop-shadow(0 18px 40px rgba(0,0,0,.5));
+      opacity:.95;
+    }
+    .miniGrid{
+      display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px;
+      margin-top:8px;
+    }
+    .mini{
+      padding:12px; border-radius:18px; background:rgba(0,0,0,.16);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .mini .l{font-size:12px; color:var(--muted)}
+    .mini .v{font-size:18px; margin-top:6px}
+    .sectionTitle{font-size:13px; color:var(--muted); margin:0 0 10px 0}
+    .forecastRow{
+      display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:10px;
+    }
+    @media (max-width: 920px){ .forecastRow{grid-template-columns: repeat(3, minmax(0,1fr));} }
+    .fcell{
+      padding:12px; border-radius:18px; background:rgba(0,0,0,.16);
+      border:1px solid rgba(255,255,255,.10);
+      text-align:center;
+    }
+    .fcell .t{font-size:12px; color:var(--muted)}
+    .fcell .v{font-size:18px; margin-top:6px}
+    .fcell svg{width:36px;height:36px;margin-top:10px;opacity:.9}
+    .warn{
+      margin-top:10px; padding:10px 12px; border-radius:16px;
+      border:1px solid rgba(255,90,90,.35);
+      background: rgba(255,90,90,.12);
+      color: rgba(255,255,255,.85);
+      font-size:12px;
+      display:none;
+    }
+    .debug{
+      margin-top:12px; color:rgba(255,255,255,.35); font-size:11px;
+      word-break: break-all;
+    }
+    a{color:inherit}
+  </style>
 </head>
 <body>
-  <div class="bg">
-    <div class="bgNoise"></div>
-    <div class="bgGlow"></div>
-    <div class="rainLayer" id="rainLayer"></div>
-  </div>
-
-  <div class="shell">
-    <header class="top">
+  <div class="wrap">
+    <div class="topbar">
       <div class="brand">
-        <div class="logo">⟡</div>
-        <div class="brandText">
-          <div class="brandName">Meteo Sant’Antonino</div>
-          <div class="brandSub" id="brandSub">Stazione + previsioni</div>
+        <div class="dot" id="dot"></div>
+        <div class="title">
+          <div class="h">Meteo Sant’Antonino</div>
+          <div class="s">Stazione + previsione</div>
         </div>
       </div>
+      <div class="pills">
+        <div class="pill">Ora <strong id="nowTime">--:--</strong></div>
+        <div class="pill">Data <strong id="nowDate">--</strong></div>
+        <div class="pill" id="onlinePill">Stato <strong id="stateTxt">--</strong></div>
+      </div>
+    </div>
 
-      <nav class="nav">
-        <a class="navItem isActive" href="#">Home</a>
-        <a class="navItem" href="#dati">Dati</a>
-        <a class="navItem" href="#storico">Storico</a>
-      </nav>
+    <div class="grid">
+      <div class="panel">
+        <div class="hero">
+          <div>
+            <div class="sub" id="headline">Caricamento...</div>
+            <h1 class="temp" id="tempMain">--°</h1>
+            <div class="sub" id="feelsLine">--</div>
+            <div class="statusline" id="updatedLine">--</div>
+            <div class="warn" id="warnBox"></div>
 
-      <div class="topRight">
-        <div class="pill">
-          <div class="pillKey">Ora</div>
-          <div class="pillVal" id="clock">--:--</div>
+            <div class="kpiRow">
+              <div class="kpi"><div class="l">Umidità</div><div class="v" id="hum">--%</div></div>
+              <div class="kpi"><div class="l">Vento</div><div class="v" id="wind">-- km/h</div></div>
+              <div class="kpi"><div class="l">Pressione</div><div class="v" id="press">-- hPa</div></div>
+              <div class="kpi"><div class="l">Pioggia oggi</div><div class="v" id="rain">-- mm</div></div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end;">
+            <div id="iconHolder"></div>
+          </div>
         </div>
-        <div class="pill">
-          <div class="pillKey">Data</div>
-          <div class="pillVal" id="dateStr">--</div>
+
+        <div style="margin-top:14px;">
+          <p class="sectionTitle">Prossime ore</p>
+          <div class="forecastRow" id="forecastRow">
+            <!-- cells injected -->
+          </div>
         </div>
-        <div class="statusPill" id="statusPill">
-          <span class="dot"></span>
-          <span id="statusText">—</span>
+
+        <div class="debug" id="debugLine"></div>
+      </div>
+
+      <div class="panel">
+        <p class="sectionTitle">Dettagli</p>
+        <div class="miniGrid">
+          <div class="mini"><div class="l">Rugiada</div><div class="v" id="dew">-- °C</div></div>
+          <div class="mini"><div class="l">Raffica</div><div class="v" id="gust">-- km/h</div></div>
+          <div class="mini"><div class="l">Direzione vento</div><div class="v" id="wdir">--°</div></div>
+          <div class="mini"><div class="l">UV</div><div class="v" id="uv">--</div></div>
+          <div class="mini"><div class="l">Insolazione</div><div class="v" id="sol">-- W/m²</div></div>
+          <div class="mini"><div class="l">VPD</div><div class="v" id="vpd">-- inHg</div></div>
         </div>
       </div>
-    </header>
-
-    <main class="stage">
-      <section class="heroCard">
-        <div class="heroLeft">
-          <div class="heroTitle" id="heroTitle">Caricamento…</div>
-          <div class="heroSubtitle" id="heroSubtitle">—</div>
-
-          <div class="miniRow">
-            <div class="miniKpi">
-              <div class="miniTop">💧 Umidità</div>
-              <div class="miniVal" id="humNow">--%</div>
-              <canvas class="spark" id="spHum"></canvas>
-            </div>
-
-            <div class="miniKpi">
-              <div class="miniTop">🧭 Pressione</div>
-              <div class="miniVal" id="pressNow">-- hPa</div>
-              <canvas class="spark" id="spPress"></canvas>
-            </div>
-
-            <div class="miniKpi">
-              <div class="miniTop">🌬️ Vento</div>
-              <div class="miniVal" id="windNow">-- / -- km/h</div>
-              <canvas class="spark" id="spWind"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="heroCenter">
-          <div class="cloudWrap" aria-hidden="true">
-            <svg class="cloud" viewBox="0 0 640 360">
-              <defs>
-                <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="10"></feGaussianBlur>
-                </filter>
-              </defs>
-              <g filter="url(#blur)" opacity="0.98">
-                <path d="M208 268c-52 0-94-36-94-80 0-40 33-73 76-79 16-48 68-83 129-83 70 0 128 45 136 103 44 6 78 40 78 79 0 44-42 80-94 80H208z"
-                  fill="rgba(255,255,255,0.92)"/>
-              </g>
-              <g opacity="0.16">
-                <path d="M224 254c-44 0-80-28-80-62 0-32 27-58 65-62 14-38 58-65 110-65 60 0 110 35 116 81 38 4 68 30 68 58 0 34-36 62-80 62H224z"
-                  fill="rgba(0,0,0,0.45)"/>
-              </g>
-            </svg>
-          </div>
-
-          <div class="heroWave">
-            <canvas id="wave" class="waveCanvas"></canvas>
-          </div>
-        </div>
-
-        <div class="heroRight">
-          <div class="bigTemp">
-            <div class="bigTempVal" id="nowTemp">--°</div>
-            <div class="bigTempMeta" id="nowMeta">—</div>
-          </div>
-
-          <div class="sideStats">
-            <div class="sideStat">
-              <div class="sideKey">☀️ Insolazione</div>
-              <div class="sideVal" id="solarNow">-- W/m²</div>
-              <canvas class="spark" id="spSolar"></canvas>
-            </div>
-
-            <div class="sideStat">
-              <div class="sideKey">🟣 UV</div>
-              <div class="sideVal" id="uviNow">--</div>
-              <canvas class="spark" id="spUvi"></canvas>
-            </div>
-
-            <div class="sideStat">
-              <div class="sideKey">💨 VPD</div>
-              <div class="sideVal" id="vpdNow">-- kPa</div>
-              <canvas class="spark" id="spVpd"></canvas>
-            </div>
-
-            <div class="sideStat">
-              <div class="sideKey">💠 Rugiada</div>
-              <div class="sideVal" id="dewNow">--°</div>
-              <canvas class="spark" id="spDew"></canvas>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="grid2" id="dati">
-        <div class="panel">
-          <div class="panelTitle">Pioggia</div>
-          <div class="rainGrid">
-            <div class="statCard">
-              <div class="statKey">🌧️ Rate</div>
-              <div class="statVal" id="rainRate">-- mm/h</div>
-              <canvas class="spark" id="spRainRate"></canvas>
-            </div>
-
-            <div class="statCard">
-              <div class="statKey">⏱️ 1h</div>
-              <div class="statVal" id="rain1h">-- mm</div>
-              <canvas class="spark" id="spRain1h"></canvas>
-            </div>
-
-            <div class="statCard">
-              <div class="statKey">🕛 24h</div>
-              <div class="statVal" id="rain24h">-- mm</div>
-              <canvas class="spark" id="spRain24h"></canvas>
-            </div>
-
-            <div class="statCard">
-              <div class="statKey">📅 Oggi</div>
-              <div class="statVal" id="rainDaily">-- mm</div>
-              <canvas class="spark" id="spRainDaily"></canvas>
-            </div>
-
-            <div class="statCard">
-              <div class="statKey">🗓️ Mese</div>
-              <div class="statVal" id="rainMonth">-- mm</div>
-              <canvas class="spark" id="spRainMonth"></canvas>
-            </div>
-
-            <div class="statCard">
-              <div class="statKey">🏁 Anno</div>
-              <div class="statVal" id="rainYear">-- mm</div>
-              <canvas class="spark" id="spRainYear"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel" id="storico">
-          <div class="panelTitle">Ultime 48 ore (temperatura)</div>
-          <canvas id="chartTemp" class="bigChart"></canvas>
-          <div class="panelNote" id="chartLegend">—</div>
-        </div>
-      </section>
-
-      <section class="grid2">
-        <div class="panel">
-          <div class="panelTitle">Prossime ore</div>
-          <div class="hourly" id="hourly"></div>
-          <div class="panelNote" id="forecastNote1">Se Open-Meteo è in quota, questa sezione resta vuota.</div>
-        </div>
-
-        <div class="panel">
-          <div class="panelTitle">7 giorni</div>
-          <div class="daily" id="daily"></div>
-          <div class="panelNote" id="forecastNote2">Stazione sempre attiva. Previsioni quando disponibili.</div>
-        </div>
-      </section>
-
-      <footer class="foot">
-        <div id="footerText">—</div>
-      </footer>
-    </main>
+    </div>
   </div>
 
-  <script src="./app.js"></script>
+<script>
+  // 1) METTI QUI IL TUO WORKER BASE, E DEVE ESSERE ASSOLUTO
+  // esempio: https://dry-frog-bb05.spocci.workers.dev
+  const WORKER_BASE = "https://dry-frog-bb05.spocci.workers.dev";
+
+  const ENDPOINT_NOW = WORKER_BASE.replace(/\/$/, "") + "/station/now";
+  const ENDPOINT_FORECAST = WORKER_BASE.replace(/\/$/, "") + "/forecast";
+
+  const el = (id) => document.getElementById(id);
+
+  function fmt1(n){ return (Math.round(n * 10) / 10).toFixed(1); }
+  function safeNum(v){
+    // non usare if(!v) perché 0 è un valore valido
+    return (v === null || v === undefined || Number.isNaN(v)) ? null : Number(v);
+  }
+
+  function setOnline(isOnline){
+    el("stateTxt").textContent = isOnline ? "Online" : "Offline";
+    el("dot").style.background = isOnline ? "#34d399" : "#ff5a5a";
+    el("dot").style.boxShadow = isOnline ? "0 0 0 6px rgba(52,211,153,.12)" : "0 0 0 6px rgba(255,90,90,.12)";
+  }
+
+  function iconSvg(kind){
+    // icone semplici, coerenti (cloud / sun / rain)
+    const cloud = `
+      <svg class="wxIcon" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M44 90h49c14 0 25-10 25-23s-11-23-25-23c-3 0-6 1-9 2C80 32 68 22 53 22 36 22 22 36 22 53c0 2 0 4 1 6C13 63 6 72 6 82c0 13 11 23 24 23h14Z" stroke="rgba(255,255,255,.92)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    const sun = `
+      <svg class="wxIcon" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="64" cy="64" r="22" stroke="rgba(255,255,255,.92)" stroke-width="6"/>
+        <path d="M64 10v14M64 104v14M10 64h14M104 64h14M24 24l10 10M94 94l10 10M104 24l-10 10M34 94l-10 10" stroke="rgba(255,255,255,.92)" stroke-width="6" stroke-linecap="round"/>
+      </svg>`;
+    const rain = `
+      <svg class="wxIcon" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M44 78h49c14 0 25-10 25-23s-11-23-25-23c-3 0-6 1-9 2C80 20 68 10 53 10 36 10 22 24 22 41c0 2 0 4 1 6C13 51 6 60 6 70c0 13 11 23 24 23h14Z" stroke="rgba(255,255,255,.92)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M42 92l-6 16M64 92l-6 16M86 92l-6 16" stroke="rgba(255,255,255,.92)" stroke-width="6" stroke-linecap="round"/>
+      </svg>`;
+    if(kind === "sun") return sun;
+    if(kind === "rain") return rain;
+    return cloud;
+  }
+
+  function pickKind(sample){
+    const rainRate = safeNum(sample?.outdoor?.rain?.rateMmH ?? sample?.rain?.rateMmH);
+    const solar = safeNum(sample?.outdoor?.solar?.solarWm2 ?? sample?.solar?.solarWm2);
+    if (rainRate !== null && rainRate > 0.2) return "rain";
+    if (solar !== null && solar > 180) return "sun";
+    return "cloud";
+  }
+
+  function showWarn(msg){
+    const w = el("warnBox");
+    w.textContent = msg;
+    w.style.display = "block";
+  }
+  function hideWarn(){
+    const w = el("warnBox");
+    w.style.display = "none";
+  }
+
+  function renderStation(sample, meta){
+    // campi normalizzati che mi hai incollato
+    const t = safeNum(sample?.outdoor?.tempC);
+    const feels = safeNum(sample?.outdoor?.feelsLikeC);
+    const app = safeNum(sample?.outdoor?.appTempC);
+    const hum = safeNum(sample?.outdoor?.humidity);
+    const dew = safeNum(sample?.outdoor?.dewPointC);
+    const vpd = safeNum(sample?.outdoor?.vpdInHg);
+    const ws = safeNum(sample?.wind?.speedKmh);
+    const gust = safeNum(sample?.wind?.gustKmh);
+    const wdir = safeNum(sample?.wind?.directionDeg);
+    const press = safeNum(sample?.pressure?.relativeHpa);
+    const sol = safeNum(sample?.solar?.solarWm2);
+    const uv = safeNum(sample?.solar?.uvi);
+    const rainDaily = safeNum(sample?.rain?.dailyMm);
+
+    // qui NON devi usare if(!t) perché 0°C è valido
+    const ok = (t !== null);
+
+    setOnline(ok);
+
+    const iso = meta?.iso || null;
+    el("debugLine").textContent = "now: " + ENDPOINT_NOW;
+
+    if(!ok){
+      el("headline").textContent = "Dati non disponibili";
+      el("tempMain").textContent = "--°";
+      el("feelsLine").textContent = "--";
+      el("updatedLine").textContent = "--";
+      el("hum").textContent = "--%";
+      el("wind").textContent = "-- km/h";
+      el("press").textContent = "-- hPa";
+      el("rain").textContent = "-- mm";
+      el("dew").textContent = "-- °C";
+      el("gust").textContent = "-- km/h";
+      el("wdir").textContent = "--°";
+      el("uv").textContent = "--";
+      el("sol").textContent = "-- W/m²";
+      el("vpd").textContent = "-- inHg";
+      el("iconHolder").innerHTML = iconSvg("cloud");
+      showWarn("Nessun dato stazione. Se vedi questo con 0°C fuori, stavi trattando 0 come assenza: ora è corretto.");
+      return;
+    }
+
+    hideWarn();
+
+    el("headline").textContent = "Ora";
+    el("tempMain").textContent = fmt1(t) + "°";
+    el("feelsLine").textContent = "Feels " + fmt1(feels ?? t) + "°  |  App " + fmt1(app ?? feels ?? t) + "°";
+    el("updatedLine").textContent = iso ? ("Aggiornato: " + new Date(iso).toLocaleString("it-CH")) : "Aggiornato: --";
+
+    el("hum").textContent = (hum === null ? "--" : Math.round(hum)) + "%";
+    el("wind").textContent = (ws === null ? "--" : Math.round(ws)) + " km/h";
+    el("press").textContent = (press === null ? "--" : Math.round(press)) + " hPa";
+    el("rain").textContent = (rainDaily === null ? "--" : fmt1(rainDaily)) + " mm";
+
+    el("dew").textContent = (dew === null ? "--" : fmt1(dew)) + " °C";
+    el("gust").textContent = (gust === null ? "--" : Math.round(gust)) + " km/h";
+    el("wdir").textContent = (wdir === null ? "--" : Math.round(wdir)) + "°";
+    el("uv").textContent = (uv === null ? "--" : fmt1(uv));
+    el("sol").textContent = (sol === null ? "--" : Math.round(sol)) + " W/m²";
+    el("vpd").textContent = (vpd === null ? "--" : fmt1(vpd)) + " inHg";
+
+    const kind = pickKind(sample);
+    el("iconHolder").innerHTML = iconSvg(kind);
+
+    // cache last good
+    try{
+      localStorage.setItem("last_good_station", JSON.stringify({ts: Date.now(), sample, meta}));
+    }catch(e){}
+  }
+
+  function renderForecast(payload){
+    // non so la tua struttura esatta di /forecast: quindi faccio fallback elegante
+    el("debugLine").textContent = el("debugLine").textContent + "  |  forecast: " + ENDPOINT_FORECAST;
+
+    const row = el("forecastRow");
+    row.innerHTML = "";
+
+    // Provo vari formati comuni: se non li trova, non rompe la pagina
+    const hours = payload?.hours || payload?.hourly || payload?.data?.hours || null;
+    if(!hours || !Array.isArray(hours) || hours.length === 0){
+      // celle placeholder non “offline”, solo vuote
+      for(let i=0;i<6;i++){
+        const c = document.createElement("div");
+        c.className = "fcell";
+        c.innerHTML = `<div class="t">--:--</div>${iconSvg("cloud").replace('class="wxIcon"', '')}<div class="v">--°</div>`;
+        row.appendChild(c);
+      }
+      return;
+    }
+
+    // Prendo 6 ore
+    const take = hours.slice(0, 6);
+    take.forEach(h => {
+      const timeIso = h?.iso || h?.time || h?.ts || null;
+      const t = safeNum(h?.tempC ?? h?.temperatureC ?? h?.temperature ?? h?.temp);
+      const rain = safeNum(h?.rainMm ?? h?.precipMm ?? h?.precip ?? h?.rain);
+      const solar = safeNum(h?.solarWm2 ?? h?.solar);
+      let kind = "cloud";
+      if(rain !== null && rain > 0.2) kind = "rain";
+      else if(solar !== null && solar > 180) kind = "sun";
+
+      const label = timeIso ? new Date(timeIso).toLocaleTimeString("it-CH",{hour:"2-digit",minute:"2-digit"}) : "--:--";
+
+      const c = document.createElement("div");
+      c.className = "fcell";
+      c.innerHTML = `
+        <div class="t">${label}</div>
+        ${iconSvg(kind).replace('class="wxIcon"', '')}
+        <div class="v">${t === null ? "--" : fmt1(t)}°</div>
+      `;
+      row.appendChild(c);
+    });
+
+    try{
+      localStorage.setItem("last_good_forecast", JSON.stringify({ts: Date.now(), payload}));
+    }catch(e){}
+  }
+
+  async function fetchJson(url, timeoutMs=8000){
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try{
+      const r = await fetch(url, {signal: ctrl.signal, cache:"no-store"});
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  async function loadAll(){
+    const d = new Date();
+    el("nowTime").textContent = d.toLocaleTimeString("it-CH",{hour:"2-digit",minute:"2-digit"});
+    el("nowDate").textContent = d.toLocaleDateString("it-CH",{day:"2-digit",month:"short"});
+
+    // tenta rete
+    try{
+      const now = await fetchJson(ENDPOINT_NOW);
+      // compat: se la tua risposta è {ok:true,sample:{...}} come mi hai incollato
+      renderStation(now.sample || now, {iso: now.iso || now.sample?.iso || now.sample?.ts ? now.iso : now.iso});
+    }catch(e){
+      setOnline(false);
+      // fallback: ultimo dato valido
+      try{
+        const s = JSON.parse(localStorage.getItem("last_good_station") || "null");
+        if(s?.sample){
+          renderStation(s.sample, s.meta || {});
+          showWarn("Rete non disponibile. Mostro l’ultimo dato salvato.");
+        }else{
+          renderStation({}, {});
+          showWarn("Errore fetch stazione: " + String(e.message || e));
+        }
+      }catch(_){
+        renderStation({}, {});
+        showWarn("Errore fetch stazione: " + String(e.message || e));
+      }
+    }
+
+    try{
+      const fc = await fetchJson(ENDPOINT_FORECAST);
+      renderForecast(fc);
+    }catch(e){
+      try{
+        const f = JSON.parse(localStorage.getItem("last_good_forecast") || "null");
+        if(f?.payload){
+          renderForecast(f.payload);
+          showWarn("Forecast non disponibile. Mostro l’ultimo forecast salvato.");
+        }else{
+          renderForecast({});
+        }
+      }catch(_){
+        renderForecast({});
+      }
+    }
+  }
+
+  loadAll();
+  setInterval(loadAll, 60_000);
+</script>
 </body>
 </html>
-
 
