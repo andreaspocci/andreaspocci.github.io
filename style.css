@@ -64,7 +64,15 @@ body{
 .heroMeta{margin-top:8px;font-size:12px;color:var(--muted2)}
 .heroRight{display:grid;gap:10px;min-width:260px}
 
-.kpi{border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:16px;padding:12px}
+.kpi{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.05);
+  border-radius:16px;
+  padding:12px;
+}
+
+.kpiTop{display:flex;align-items:center;gap:8px}
+.kpiIcon{font-size:14px;opacity:.9}
 .kpiLabel{font-size:12px;color:var(--muted2)}
 .kpiValue{margin-top:6px;font-size:16px}
 
@@ -73,11 +81,22 @@ body{
   grid-template-columns: repeat(3, 1fr);
   gap:10px;
 }
+
 .kpiSmall{
   border:1px solid var(--line);
   background:rgba(255,255,255,.05);
   border-radius:16px;
   padding:12px;
+}
+
+.kpiWithSpark{padding-bottom:10px}
+.spark{
+  width:100%;
+  height:48px;
+  margin-top:8px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(255,255,255,.03);
 }
 
 .hourly{display:flex;gap:10px;overflow:auto;padding-bottom:6px}
@@ -97,7 +116,7 @@ body{
 .dayTemp{font-size:14px}
 .dayRain{font-size:12px;color:var(--muted2);margin-top:2px}
 
-canvas{
+canvas#chartTemp{
   width:100%;
   height:auto;
   border:1px solid var(--line);
@@ -115,3 +134,4 @@ canvas{
   .heroRight{min-width:auto}
   .kpiGrid{grid-template-columns: repeat(2, 1fr)}
 }
+
