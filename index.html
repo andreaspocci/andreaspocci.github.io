@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Stazione meteo – Sant’Antonino (zona Trefogli)</title>
-
   <style>
     :root{
       --bg1:#050816;
@@ -19,7 +18,6 @@
       --shadow: 0 20px 60px rgba(0,0,0,.55);
       --radius: 18px;
     }
-
     *{box-sizing:border-box}
     body{
       margin:0;
@@ -32,208 +30,98 @@
         linear-gradient(180deg, var(--bg1), var(--bg2));
       min-height:100vh;
     }
-
-    .wrap{
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 44px 18px 70px;
-    }
-
-    .top{
-      display:flex;
-      gap:18px;
-      align-items:flex-start;
-      justify-content:space-between;
-      flex-wrap:wrap;
-      margin-bottom: 22px;
-    }
-
-    .brand{
-      display:flex;
-      gap:14px;
-      align-items:flex-start;
-    }
-
+    .wrap{max-width:980px;margin:0 auto;padding:44px 18px 70px;}
+    .top{display:flex;gap:18px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:22px;}
+    .brand{display:flex;gap:14px;align-items:flex-start;}
     .logo{
-      width:44px;
-      height:44px;
-      border-radius:14px;
+      width:44px;height:44px;border-radius:14px;
       background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(34,211,238,.85));
       box-shadow: 0 14px 40px rgba(124,58,237,.30);
-      position:relative;
-      overflow:hidden;
-      flex:0 0 auto;
-      margin-top:4px;
+      position:relative;overflow:hidden;flex:0 0 auto;margin-top:4px;
     }
     .logo:before{
-      content:"";
-      position:absolute;
-      inset:-20px;
+      content:"";position:absolute;inset:-20px;
       background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.55), transparent 45%);
       transform: rotate(12deg);
     }
-
-    h1{
-      margin:0;
-      font-size: clamp(28px, 4vw, 40px);
-      letter-spacing: -0.02em;
-      line-height: 1.05;
-    }
-    .subtitle{
-      margin: 10px 0 0;
-      color: var(--muted);
-      font-size: 1.08rem;
-      max-width: 62ch;
-      line-height:1.55;
-    }
-
-    .pill-row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:14px;
-    }
+    h1{margin:0;font-size:clamp(28px, 4vw, 40px);letter-spacing:-0.02em;line-height:1.05;}
+    .subtitle{margin:10px 0 0;color:var(--muted);font-size:1.08rem;max-width:62ch;line-height:1.55;}
+    .pill-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
     .pill{
       border:1px solid var(--stroke);
       background: rgba(255,255,255,.04);
       backdrop-filter: blur(10px);
-      padding: 8px 12px;
-      border-radius: 999px;
-      color: var(--muted);
-      font-size: .92rem;
-      display:flex;
-      align-items:center;
-      gap:8px;
+      padding: 8px 12px;border-radius:999px;color:var(--muted);font-size:.92rem;
+      display:flex;align-items:center;gap:8px;
     }
-    .dot{
-      width:10px;height:10px;border-radius:999px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      box-shadow: 0 0 0 4px rgba(124,58,237,.14);
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1.35fr .65fr;
-      gap:16px;
-      margin-top: 22px;
-    }
-    @media (max-width: 920px){
-      .grid{grid-template-columns: 1fr;}
-    }
-
+    .dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 0 0 4px rgba(124,58,237,.14);}
+    .grid{display:grid;grid-template-columns: 1fr;gap:16px;margin-top:22px;}
     .card{
       background: var(--card);
       border: 1px solid var(--stroke);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      overflow:hidden;
-      position:relative;
+      overflow:hidden;position:relative;
     }
     .card:before{
-      content:"";
-      position:absolute;
-      inset:0;
+      content:"";position:absolute;inset:0;
       background: radial-gradient(800px 260px at 25% -10%, rgba(124,58,237,.22), transparent 55%),
                   radial-gradient(700px 260px at 95% 5%, rgba(34,211,238,.16), transparent 60%);
       pointer-events:none;
     }
-    .card-inner{
-      position:relative;
-      padding: 22px;
-    }
-
-    .card h2{
-      margin:0 0 10px;
-      font-size: 1.15rem;
-      letter-spacing: -.01em;
-    }
-    .card p{
-      margin:0;
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: 1.02rem;
-    }
-
-    .cta{
-      margin-top: 16px;
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
+    .card-inner{position:relative;padding:22px;}
+    .card h2{margin:0 0 10px;font-size:1.15rem;letter-spacing:-.01em;}
+    .card p{margin:0;color:var(--muted);line-height:1.6;font-size:1.02rem;}
+    .cta{margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
     .btn{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      padding: 14px 16px;
-      border-radius: 14px;
-      text-decoration:none;
-      font-weight: 700;
-      border: 1px solid rgba(255,255,255,.16);
-      transition: transform .08s ease, filter .15s ease;
-      user-select:none;
+      display:inline-flex;align-items:center;gap:10px;padding:14px 16px;border-radius:14px;
+      text-decoration:none;font-weight:700;border:1px solid rgba(255,255,255,.16);
+      transition: transform .08s ease, filter .15s ease; user-select:none;
     }
-    .btn:hover{ transform: translateY(-1px); filter: brightness(1.05); }
-    .btn:active{ transform: translateY(0px); }
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.05);}
+    .btn:active{transform:translateY(0px);}
+    .btn-primary{background:linear-gradient(135deg, rgba(124,58,237,.95), rgba(34,211,238,.85));color:#061021;}
+    .btn-ghost{background:rgba(255,255,255,.05);color:var(--text);}
+    footer{margin-top:22px;color:rgba(234,240,255,.55);font-size:.92rem;line-height:1.5;}
 
-    .btn-primary{
-      background: linear-gradient(135deg, rgba(124,58,237,.95), rgba(34,211,238,.85));
-      color: #061021;
-      box-shadow: 0 18px 45px rgba(34,211,238,.18), 0 18px 45px rgba(124,58,237,.18);
+    .live-grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap:12px;
     }
-    .btn-ghost{
-      background: rgba(255,255,255,.05);
-      color: var(--text);
-    }
+    @media (max-width: 980px){ .live-grid{grid-template-columns: repeat(2, 1fr);} }
+    @media (max-width: 520px){ .live-grid{grid-template-columns: 1fr;} }
 
-    .mini{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .mini .box{
+    .metric{
       background: var(--card2);
       border:1px solid var(--stroke);
       border-radius: 16px;
-      padding: 14px 14px;
-    }
-    .kv{
+      padding: 14px;
       display:flex;
-      justify-content:space-between;
       gap:12px;
-      align-items:center;
-      margin-top: 6px;
-      font-size: .98rem;
-      color: var(--muted);
+      align-items:flex-start;
+      min-height: 84px;
     }
-
-    .kv strong{
-      color: var(--text);
-      font-weight: 700;
-      letter-spacing: -.01em;
+    .icon{
+      width:28px;height:28px;flex:0 0 auto;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
     }
-
-    .embed{
-      margin-top: 16px;
-      border-top: 1px solid var(--stroke);
-      padding-top: 16px;
+    .metric .k{color:rgba(234,240,255,.68);font-size:.92rem;margin-top:2px;}
+    .metric .v{font-size:1.35rem;font-weight:800;letter-spacing:-.02em;margin-top:3px;}
+    .small{font-size:.92rem;color:rgba(234,240,255,.62);}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;}
+    .status{display:inline-flex;align-items:center;gap:8px;color:rgba(234,240,255,.72);font-size:.92rem;}
+    .pulse{
+      width:10px;height:10px;border-radius:999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 0 5px rgba(34,211,238,.10);
     }
-
-    .frame{
-      width:100%;
-      height: 520px;
-      border: 1px solid var(--stroke);
-      border-radius: 16px;
-      background: rgba(0,0,0,.25);
-    }
-
-    footer{
-      margin-top: 22px;
-      color: rgba(234,240,255,.55);
-      font-size: .92rem;
-      line-height:1.5;
-    }
+    .err{color:#fca5a5}
   </style>
 </head>
 
@@ -245,13 +133,13 @@
         <div>
           <h1>Stazione meteo locale</h1>
           <div class="subtitle">
-            Dati aggiornati in tempo reale dalla mia stazione a Sant’Antonino (zona Trefogli):
-            temperatura, umidità, vento, pressione e precipitazioni. Pagina pensata per essere leggibile da tutti.
+            Dati aggiornati in tempo reale dalla mia stazione a Sant’Antonino (zona Trefogli).
+            Valori letti direttamente dal sensore e mostrati qui con grafica semplice e leggibile.
           </div>
 
           <div class="pill-row">
-            <div class="pill"><span class="dot"></span> aggiornamento continuo</div>
-            <div class="pill">grafici e storico</div>
+            <div class="pill"><span class="dot"></span> aggiornamento automatico</div>
+            <div class="pill">dati live</div>
             <div class="pill">accesso pubblico</div>
           </div>
         </div>
@@ -265,69 +153,157 @@
     <div class="grid">
       <div class="card">
         <div class="card-inner">
-          <h2>consultazione rapida</h2>
+          <h2>dati live</h2>
           <p>
-            Se vuoi solo sapere che tempo fa adesso, apri i dati live: troverai valori aggiornati,
-            grafici orari e riepilogo giornaliero.
+            Qui vedi i valori principali direttamente su questa pagina. Niente iframe, niente app:
+            numeri puliti, icone chiare, aggiornamento automatico.
           </p>
 
-          <div class="cta">
-            <a class="btn btn-primary" href="https://www.ecowitt.net/home/share?authorize=35GSW8" target="_blank" rel="noopener">
-              dati meteo live →
-            </a>
-            <a class="btn btn-ghost" href="#dettagli">
-              cosa misura la stazione
-            </a>
+          <div class="row">
+            <div class="status"><span class="pulse"></span><span id="lastStatus">caricamento…</span></div>
+            <div class="small" id="lastUpdate"></div>
           </div>
 
-          <div class="embed">
-            <h2 style="margin:0 0 10px;">anteprima (se supportata)</h2>
-            <p>
-              Se Ecowitt blocca l’anteprima, non è un problema: il pulsante sopra resta la via migliore.
-            </p>
-            <div style="margin-top:12px;">
-              <iframe class="frame" src="https://www.ecowitt.net/home/share?authorize=35GSW8" title="Dati meteo live (Ecowitt)"></iframe>
+          <div class="live-grid">
+            <div class="metric">
+              <div class="icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M14 14.76V5a2 2 0 10-4 0v9.76a4 4 0 104 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M12 17a2 2 0 002-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="k">temperatura</div>
+                <div class="v" id="tVal">—</div>
+              </div>
+            </div>
+
+            <div class="metric">
+              <div class="icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2s6 7 6 12a6 6 0 11-12 0c0-5 6-12 6-12z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </div>
+              <div>
+                <div class="k">umidità</div>
+                <div class="v" id="hVal">—</div>
+              </div>
+            </div>
+
+            <div class="metric">
+              <div class="icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M3 12h10a4 4 0 100-8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M3 18h14a4 4 0 110 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" transform="translate(0 -6)"/>
+                </svg>
+              </div>
+              <div>
+                <div class="k">vento</div>
+                <div class="v" id="wVal">—</div>
+                <div class="small" id="wSub"></div>
+              </div>
+            </div>
+
+            <div class="metric">
+              <div class="icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 22s6-4 6-10S12 2 12 2 6 6 6 12s6 10 6 10z" stroke="currentColor" stroke-width="2"/>
+                  <path d="M12 15V9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="k">pressione</div>
+                <div class="v" id="pVal">—</div>
+              </div>
+            </div>
+
+            <div class="metric">
+              <div class="icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M7 16a5 5 0 0110 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M12 3v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M8 21h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="k">pioggia oggi</div>
+                <div class="v" id="rVal">—</div>
+              </div>
             </div>
           </div>
 
-          <footer>
-            Dati a scopo informativo. In futuro questa pagina può diventare autonoma (server locale e grafici personalizzati)
-            senza cambiare indirizzo.
-          </footer>
-        </div>
-      </div>
-
-      <div class="mini" id="dettagli">
-        <div class="box">
-          <h2 style="margin:0 0 8px;">misure principali</h2>
-          <div class="kv"><span>temperatura e umidità</span><strong>interno + esterno</strong></div>
-          <div class="kv"><span>vento</span><strong>velocità + direzione</strong></div>
-          <div class="kv"><span>pressione</span><strong>trend e variazioni</strong></div>
-          <div class="kv"><span>pioggia</span><strong>giorno / mese / anno</strong></div>
-          <div class="kv"><span>luce / UV</span><strong>intensità e indice</strong></div>
-        </div>
-
-        <div class="box">
-          <h2 style="margin:0 0 8px;">come leggerla</h2>
-          <p style="margin:0;color:var(--muted);line-height:1.6;">
-            Per decisioni rapide guarda temperatura, vento e pioggia oggi.
-            Per capire se cambia il tempo guarda trend pressione e grafico ultime ore.
-          </p>
-        </div>
-
-        <div class="box">
-          <h2 style="margin:0 0 8px;">link diretto</h2>
-          <p style="margin:0;color:var(--muted);line-height:1.6;">
-            Se vuoi solo aprire i dati: vai direttamente alla pagina live.
-          </p>
-          <div class="cta" style="margin-top:12px;">
+          <div class="cta">
             <a class="btn btn-primary" href="https://www.ecowitt.net/home/share?authorize=35GSW8" target="_blank" rel="noopener">
-              apri dati live →
+              pagina ecowitt →
+            </a>
+            <a class="btn btn-ghost" href="https://dry-frog-bb05.spocci.workers.dev/meteo" target="_blank" rel="noopener">
+              json raw →
             </a>
           </div>
+
+          <footer>
+            Dati a scopo informativo. Se un valore è vuoto, significa che quel sensore non sta fornendo dato in quel momento.
+          </footer>
         </div>
       </div>
     </div>
   </div>
+
+  <script>
+    const ENDPOINT = "https://dry-frog-bb05.spocci.workers.dev/meteo";
+
+    const el = (id) => document.getElementById(id);
+
+    function fmtNum(x, digits=1){
+      if (x === null || x === undefined || x === "") return "—";
+      const n = Number(x);
+      if (Number.isNaN(n)) return "—";
+      return n.toFixed(digits);
+    }
+
+    function degToCompass(deg){
+      if (deg === null || deg === undefined || deg === "") return "";
+      const d = Number(deg);
+      if (Number.isNaN(d)) return "";
+      const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+      return dirs[Math.round(d / 22.5) % 16];
+    }
+
+    function setStatus(ok, text){
+      el("lastStatus").textContent = text;
+      el("lastStatus").className = ok ? "" : "err";
+    }
+
+    async function load(){
+      try{
+        const r = await fetch(ENDPOINT, { cache: "no-store" });
+        if(!r.ok) throw new Error("HTTP " + r.status);
+        const j = await r.json();
+
+        // questi campi devono combaciare con il JSON del tuo worker
+        el("tVal").textContent = fmtNum(j.temperature, 1) + " °C";
+        el("hVal").textContent = fmtNum(j.humidity, 0) + " %";
+        el("wVal").textContent = fmtNum(j.wind_speed, 1) + " km/h";
+        const comp = degToCompass(j.wind_dir);
+        el("wSub").textContent = comp ? ("direzione " + comp + " (" + fmtNum(j.wind_dir, 0) + "°)") : "";
+        el("pVal").textContent = fmtNum(j.pressure, 2);
+        el("rVal").textContent = (j.rain_today === null || j.rain_today === undefined) ? "—" : (fmtNum(j.rain_today, 1) + " mm");
+
+        const when = j.updated_at ? new Date(j.updated_at) : new Date();
+        el("lastUpdate").textContent = "aggiornato: " + when.toLocaleString();
+
+        setStatus(true, "live");
+      }catch(e){
+        setStatus(false, "errore di lettura dati");
+        el("lastUpdate").textContent = "";
+      }
+    }
+
+    load();
+    setInterval(load, 30000);
+  </script>
 </body>
 </html>
+
+
+   
