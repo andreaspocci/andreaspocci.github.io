@@ -20,20 +20,33 @@ async function init() {
   const okHist = stationHist.status === "fulfilled" && stationHist.value?.ok;
   const okForecast = forecast.status === "fulfilled" && !forecast.value?.error;
 
+  const updated = new Date().toLocaleString("it-CH", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  el("subtitle").textContent = `Aggiornato: ${updated}`;
+
   if (!okStationNow && !okForecast) {
     setStatus("offline", "Offline");
-    el("subtitle").textContent = "Dati non disponibili ora";
-    el("footerText").textContent = `Errore: stazione e previsioni non disponibili`;
+    el("footerText").textContent = "Errore: stazione e previsioni non disponibili";
     return;
   }
 
+  // se almeno uno funziona, la pagina è "online" (ma segnaliamo cosa è KO nel footer)
   setStatus("live", "Live");
 
-  const updated = new Date().toLocaleString("it-CH", { weekday:"short", day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
-  el("subtitle").textContent = `Aggiornato: ${updated}`;
-
   if (okStationNow) renderStationNow(stationNow.value.sample);
+  else {
+    el("nowTemp").textContent = "--°";
+    el("nowMeta").textContent = "Stazione non disponibile";
+  }
+
   if (okHist) renderTempChart(stationHist.value.points || []);
+  else el("chartLegend").textContent = "Storico non disponibile (KV o cron non configurati)";
+
   if (okForecast) {
     renderHourly(forecast.value);
     renderDaily(forecast.value);
@@ -73,49 +86,50 @@ function setStatus(mode, text) {
 }
 
 function renderStationNow(s) {
-  if (!s) return;
-
-  const temp = s.tempC;
-  const hum = s.humidity;
-  const wind = s.windKmh;
-  const press = s.pressure;
+  const temp = s?.tempC;
+  const hum = s?.humidity;
+  const wind = s?.windKmh;
+  const press = s?.pressure;
 
   el("nowTemp").textContent = temp == null ? "--°" : `${Math.round(temp)}°`;
-  el("nowMeta").textContent = s.iso ? new Date(s.iso).toLocaleString("it-CH", { hour:"2-digit", minute:"2-digit" }) : "—";
+  el("nowMeta").textContent = s?.iso
+    ? `Ultimo campione: ${new Date(s.iso).toLocaleString("it-CH", { hour:"2-digit", minute:"2-digit" })}`
+    : "—";
 
   el("humNow").textContent = hum == null ? "--%" : `${Math.round(hum)}%`;
   el("windNow").textContent = wind == null ? "-- km/h" : `${Math.round(wind)} km/h`;
-  el("pressNow").textContent = press == null ? "--" : `${Math.round(press)} hPa`;
+  el("pressNow").textContent = press == null ? "-- hPa" : `${Math.round(press)} hPa`;
 }
 
 function renderTempChart(points) {
   const canvas = el("chartTemp");
   const ctx = canvas.getContext("2d");
 
-  // resize per device pixel ratio
   const dpr = window.devicePixelRatio || 1;
-  const cssW = canvas.clientWidth;
+  const cssW = canvas.clientWidth || 900;
   const cssH = 220;
+
   canvas.width = Math.floor(cssW * dpr);
   canvas.height = Math.floor(cssH * dpr);
-  ctx.scale(dpr, dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   ctx.clearRect(0, 0, cssW, cssH);
 
   const temps = points.map(p => p.tempC).filter(v => typeof v === "number" && isFinite(v));
   if (temps.length < 2) {
-    el("chartLegend").textContent = "Storico insufficiente. Attiva il cron o lascia il sito aperto per popolare i dati.";
+    el("chartLegend").textContent = "Storico insufficiente: attiva il cron o aspetta che si accumulino campioni.";
     return;
   }
 
   const min = Math.min(...temps);
   const max = Math.max(...temps);
-
   const pad = 18;
   const w = cssW;
   const h = cssH;
+  const usableW = w - pad * 2;
+  const usableH = h - pad * 2;
 
-  // assi leggeri
+  // baseline
   ctx.globalAlpha = 0.35;
   ctx.beginPath();
   ctx.moveTo(pad, h - pad);
@@ -123,25 +137,22 @@ function renderTempChart(points) {
   ctx.stroke();
   ctx.globalAlpha = 1;
 
-  // linea temperatura
+  // linea
   ctx.beginPath();
-  const usableW = w - pad * 2;
-  const usableH = h - pad * 2;
-
-  let first = true;
   let idx = 0;
-  for (const p of points) {
-    if (typeof p.tempC !== "number" || !isFinite(p.tempC)) continue;
+  for (let i = 0; i < points.length; i++) {
+    const t = points[i].tempC;
+    if (typeof t !== "number" || !isFinite(t)) continue;
     const x = pad + (idx / (temps.length - 1)) * usableW;
-    const y = pad + (1 - (p.tempC - min) / (max - min)) * usableH;
-    if (first) { ctx.moveTo(x, y); first = false; }
+    const y = pad + (1 - (t - min) / (max - min)) * usableH;
+    if (idx === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
     idx++;
   }
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  el("chartLegend").textContent = `Temperatura 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · punti ${temps.length}`;
+  el("chartLegend").textContent = `Temp 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · campioni ${temps.length}`;
 }
 
 function renderHourly(d) {
@@ -245,3 +256,4 @@ function iconFromCode(code) {
   if ([95,96,99].includes(c)) return "⛈️";
   return "☁️";
 }
+
