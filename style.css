@@ -68,6 +68,18 @@ body{
 .kpiLabel{font-size:12px;color:var(--muted2)}
 .kpiValue{margin-top:6px;font-size:16px}
 
+.kpiGrid{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:10px;
+}
+.kpiSmall{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.05);
+  border-radius:16px;
+  padding:12px;
+}
+
 .hourly{display:flex;gap:10px;overflow:auto;padding-bottom:6px}
 .hour{min-width:110px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.05);padding:10px}
 .hourT{font-size:12px;color:var(--muted2)}
@@ -101,5 +113,5 @@ canvas{
   .grid{grid-template-columns:1fr}
   .hero{flex-direction:column}
   .heroRight{min-width:auto}
+  .kpiGrid{grid-template-columns: repeat(2, 1fr)}
 }
-
