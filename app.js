@@ -5,7 +5,18 @@ const URL_FORECAST = `${WORKER_BASE}/forecast`;
 
 const el = (id) => document.getElementById(id);
 
+startClock();
 init();
+
+function startClock() {
+  const tick = () => {
+    const now = new Date();
+    el("clock").textContent = now.toLocaleTimeString("it-CH", { hour: "2-digit", minute: "2-digit" });
+    el("dateStr").textContent = now.toLocaleDateString("it-CH", { day: "2-digit", month: "short" });
+  };
+  tick();
+  setInterval(tick, 20_000);
+}
 
 async function init() {
   setStatus("loading", "Carico");
@@ -20,37 +31,52 @@ async function init() {
   const okHist = histCompact.status === "fulfilled" && histCompact.value?.ok;
   const okForecast = forecast.status === "fulfilled" && !forecast.value?.error;
 
-  const updated = new Date().toLocaleString("it-CH", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  el("subtitle").textContent = `Aggiornato: ${updated}`;
-
   if (!okStationNow && !okForecast) {
     setStatus("offline", "Offline");
     el("footerText").textContent = "Errore: stazione e previsioni non disponibili";
+    el("heroTitle").textContent = "Offline";
+    el("heroSubtitle").textContent = "Nessun dato disponibile";
     return;
   }
 
   setStatus("live", "Live");
 
-  if (okStationNow) renderStationNow(stationNow.value.sample);
-  else setText("nowMeta", "Stazione non disponibile");
+  let conditionText = "Meteo attuale";
+  let conditionDetail = "Stazione meteo attiva";
+
+  if (okForecast && forecast.value?.current_weather) {
+    const code = forecast.value.current_weather.weathercode;
+    conditionText = conditionLabelFromCode(code);
+    conditionDetail = "Previsione (Open-Meteo)";
+  } else if (!okForecast) {
+    conditionDetail = "Previsione non disponibile (quota/429)";
+  }
+
+  el("heroTitle").textContent = conditionText;
+  el("heroSubtitle").textContent = conditionDetail;
+
+  if (okStationNow) {
+    renderStationNow(stationNow.value.sample);
+    updateRainLayer(stationNow.value.sample);
+  } else {
+    el("nowMeta").textContent = "Stazione non disponibile";
+  }
 
   if (okHist) {
     const pts = histCompact.value.points || [];
     renderSparks(pts);
     renderTempChartFromCompact(pts);
+    renderWaveFromCompact(pts);
   } else {
-    setText("chartLegend", "Storico non disponibile (KV o cron non configurati / ancora vuoto).");
+    el("chartLegend").textContent = "Storico non disponibile (KV/cron non configurati o ancora vuoto).";
+    renderWaveFallback();
   }
 
   if (okForecast) {
     renderHourly(forecast.value);
     renderDaily(forecast.value);
+    el("forecastNote1").textContent = "";
+    el("forecastNote2").textContent = "";
   }
 
   const footerParts = [];
@@ -75,14 +101,14 @@ function setStatus(mode, text) {
   el("statusText").textContent = text;
 
   if (mode === "live") {
-    dot.style.background = "rgba(34,197,94,.9)";
-    dot.style.boxShadow = "0 0 0 6px rgba(34,197,94,.12)";
+    dot.style.background = "rgba(34,197,94,0.9)";
+    dot.style.boxShadow = "0 0 0 6px rgba(34,197,94,0.12)";
   } else if (mode === "loading") {
-    dot.style.background = "rgba(59,130,246,.95)";
-    dot.style.boxShadow = "0 0 0 6px rgba(59,130,246,.12)";
+    dot.style.background = "rgba(59,130,246,0.95)";
+    dot.style.boxShadow = "0 0 0 6px rgba(59,130,246,0.12)";
   } else {
-    dot.style.background = "rgba(239,68,68,.95)";
-    dot.style.boxShadow = "0 0 0 6px rgba(239,68,68,.12)";
+    dot.style.background = "rgba(239,68,68,0.95)";
+    dot.style.boxShadow = "0 0 0 6px rgba(239,68,68,0.12)";
   }
 }
 
@@ -93,11 +119,6 @@ function isNum(n) {
 function fmt(n, digits = 0) {
   if (!isNum(n)) return "—";
   return n.toFixed(digits);
-}
-
-function setText(id, text) {
-  const node = el(id);
-  if (node) node.textContent = text;
 }
 
 function vpdToKpa(vpdInHg) {
@@ -118,37 +139,36 @@ function renderStationNow(s) {
   const so = s?.solar || {};
   const r = s?.rain || {};
 
-  setText("nowTemp", isNum(o.tempC) ? `${Math.round(o.tempC)}°` : "--°");
-  setText("nowDesc", "Stazione meteo");
+  el("nowTemp").textContent = isNum(o.tempC) ? `${Math.round(o.tempC)}°` : "--°";
 
   const timeStr = s?.iso
     ? new Date(s.iso).toLocaleTimeString("it-CH", { hour: "2-digit", minute: "2-digit" })
     : "—";
 
   const windDir = degToCompass(w.directionDeg);
-  setText("nowMeta", `Ultimo campione: ${timeStr} · Dir ${windDir} ${fmt(w.directionDeg,0)}°`);
+  el("nowMeta").textContent = `Ultimo campione ${timeStr} · Dir ${windDir} ${fmt(w.directionDeg,0)}°`;
 
-  setText("humNow", isNum(o.humidity) ? `${Math.round(o.humidity)}%` : "--%");
-  setText("pressNow", isNum(p.relativeHpa) ? `${Math.round(p.relativeHpa)} hPa` : "-- hPa");
-  setText("windNow", (isNum(w.speedKmh) || isNum(w.gustKmh)) ? `${fmt(w.speedKmh,0)} / ${fmt(w.gustKmh,0)} km/h` : "-- / -- km/h");
+  el("humNow").textContent = isNum(o.humidity) ? `${Math.round(o.humidity)}%` : "--%";
+  el("pressNow").textContent = isNum(p.relativeHpa) ? `${Math.round(p.relativeHpa)} hPa` : "-- hPa";
+  el("windNow").textContent = (isNum(w.speedKmh) || isNum(w.gustKmh)) ? `${fmt(w.speedKmh,0)} / ${fmt(w.gustKmh,0)} km/h` : "-- / -- km/h";
 
-  setText("solarNow", isNum(so.solarWm2) ? `${fmt(so.solarWm2,1)} W/m²` : "-- W/m²");
-  setText("uviNow", isNum(so.uvi) ? `${fmt(so.uvi,0)}` : "--");
-  setText("dewNow", isNum(o.dewPointC) ? `${fmt(o.dewPointC,0)}°` : "--°");
+  el("solarNow").textContent = isNum(so.solarWm2) ? `${fmt(so.solarWm2,1)} W/m²` : "-- W/m²";
+  el("uviNow").textContent = isNum(so.uvi) ? `${fmt(so.uvi,0)}` : "--";
+  el("dewNow").textContent = isNum(o.dewPointC) ? `${fmt(o.dewPointC,0)}°` : "--°";
 
   const vpdKpa = isNum(o.vpdInHg) ? vpdToKpa(o.vpdInHg) : null;
-  setText("vpdNow", isNum(vpdKpa) ? `${fmt(vpdKpa,3)} kPa` : "-- kPa");
+  el("vpdNow").textContent = isNum(vpdKpa) ? `${fmt(vpdKpa,3)} kPa` : "-- kPa";
 
-  setText("rainRate", isNum(r.rateMmH) ? `${fmt(r.rateMmH,1)} mm/h` : "-- mm/h");
-  setText("rain1h", isNum(r.mm1h) ? `${fmt(r.mm1h,1)} mm` : "-- mm");
-  setText("rain24h", isNum(r.mm24h) ? `${fmt(r.mm24h,1)} mm` : "-- mm");
-  setText("rainDaily", isNum(r.dailyMm) ? `${fmt(r.dailyMm,1)} mm` : "-- mm");
-  setText("rainMonth", isNum(r.monthlyMm) ? `${fmt(r.monthlyMm,1)} mm` : "-- mm");
-  setText("rainYear", isNum(r.yearlyMm) ? `${fmt(r.yearlyMm,1)} mm` : "-- mm");
+  el("rainRate").textContent = isNum(r.rateMmH) ? `${fmt(r.rateMmH,1)} mm/h` : "-- mm/h";
+  el("rain1h").textContent = isNum(r.mm1h) ? `${fmt(r.mm1h,1)} mm` : "-- mm";
+  el("rain24h").textContent = isNum(r.mm24h) ? `${fmt(r.mm24h,1)} mm` : "-- mm";
+  el("rainDaily").textContent = isNum(r.dailyMm) ? `${fmt(r.dailyMm,1)} mm` : "-- mm";
+  el("rainMonth").textContent = isNum(r.monthlyMm) ? `${fmt(r.monthlyMm,1)} mm` : "-- mm";
+  el("rainYear").textContent = isNum(r.yearlyMm) ? `${fmt(r.yearlyMm,1)} mm` : "-- mm";
 }
 
 function renderSparks(points) {
-  const arr = (key) => points.map(p => p[key]);
+  const arr = (k) => points.map(p => p[k]);
 
   drawSpark("spHum", arr("h"));
   drawSpark("spPress", arr("p"));
@@ -185,14 +205,14 @@ function drawSpark(canvasId, values) {
 
   const clean = values.filter(isNum);
   if (clean.length < 2) {
-    ctx.globalAlpha = 0.25;
+    ctx.globalAlpha = 0.22;
     ctx.beginPath();
-    ctx.moveTo(6, cssH - 10);
-    ctx.lineTo(cssW - 6, cssH - 10);
+    ctx.moveTo(8, cssH - 10);
+    ctx.lineTo(cssW - 8, cssH - 10);
     ctx.stroke();
     ctx.globalAlpha = 0.35;
     ctx.font = "11px system-ui";
-    ctx.fillText("in attesa storico", 8, 14);
+    ctx.fillText("in attesa storico", 10, 14);
     ctx.globalAlpha = 1;
     return;
   }
@@ -201,10 +221,17 @@ function drawSpark(canvasId, values) {
   const max = Math.max(...clean);
   const range = (max - min) || 1;
 
-  const padX = 6;
+  const padX = 8;
   const padY = 6;
   const w = cssW - padX * 2;
   const h = cssH - padY * 2;
+
+  ctx.globalAlpha = 0.25;
+  ctx.beginPath();
+  ctx.moveTo(padX, cssH - padY);
+  ctx.lineTo(cssW - padX, cssH - padY);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
 
   ctx.beginPath();
   let started = false;
@@ -215,12 +242,8 @@ function drawSpark(canvasId, values) {
     if (!isNum(val)) continue;
     const x = padX + (i / (n - 1)) * w;
     const y = padY + (1 - (val - min) / range) * h;
-    if (!started) {
-      ctx.moveTo(x, y);
-      started = true;
-    } else {
-      ctx.lineTo(x, y);
-    }
+    if (!started) { ctx.moveTo(x, y); started = true; }
+    else ctx.lineTo(x, y);
   }
 
   ctx.lineWidth = 2;
@@ -228,7 +251,7 @@ function drawSpark(canvasId, values) {
 
   ctx.globalAlpha = 0.35;
   ctx.font = "11px system-ui";
-  ctx.fillText(`${min.toFixed(0)}–${max.toFixed(0)}`, cssW - 56, 14);
+  ctx.fillText(`${min.toFixed(0)}–${max.toFixed(0)}`, cssW - 58, 14);
   ctx.globalAlpha = 1;
 }
 
@@ -238,7 +261,7 @@ function renderTempChartFromCompact(points) {
 
   const dpr = window.devicePixelRatio || 1;
   const cssW = canvas.clientWidth || 900;
-  const cssH = 220;
+  const cssH = canvas.clientHeight || 260;
 
   canvas.width = Math.floor(cssW * dpr);
   canvas.height = Math.floor(cssH * dpr);
@@ -248,7 +271,7 @@ function renderTempChartFromCompact(points) {
 
   const temps = points.map(p => p.t).filter(isNum);
   if (temps.length < 2) {
-    setText("chartLegend", "Storico insufficiente: aspetta campioni (cron ogni 10 minuti).");
+    el("chartLegend").textContent = "Storico insufficiente: serve qualche campione (cron).";
     return;
   }
 
@@ -262,7 +285,7 @@ function renderTempChartFromCompact(points) {
   const usableW = w - pad * 2;
   const usableH = h - pad * 2;
 
-  ctx.globalAlpha = 0.35;
+  ctx.globalAlpha = 0.25;
   ctx.beginPath();
   ctx.moveTo(pad, h - pad);
   ctx.lineTo(w - pad, h - pad);
@@ -280,7 +303,118 @@ function renderTempChartFromCompact(points) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  setText("chartLegend", `Temp 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · campioni ${temps.length}`);
+  el("chartLegend").textContent = `Temp 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · campioni ${temps.length}`;
+}
+
+function renderWaveFromCompact(points) {
+  const canvas = el("wave");
+  const ctx = canvas.getContext("2d");
+
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 900;
+  const cssH = canvas.clientHeight || 160;
+
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const temps = points.map(p => p.t).filter(isNum);
+  if (temps.length < 2) {
+    renderWaveFallback();
+    return;
+  }
+
+  const min = Math.min(...temps);
+  const max = Math.max(...temps);
+  const range = (max - min) || 1;
+
+  ctx.globalAlpha = 0.20;
+  ctx.beginPath();
+  ctx.moveTo(0, cssH);
+  const step = cssW / (temps.length - 1);
+  for (let i = 0; i < temps.length; i++) {
+    const y = 12 + (1 - (temps[i] - min) / range) * (cssH - 24);
+    ctx.lineTo(i * step, y);
+  }
+  ctx.lineTo(cssW, cssH);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.beginPath();
+  for (let i = 0; i < temps.length; i++) {
+    const y = 12 + (1 - (temps[i] - min) / range) * (cssH - 24);
+    const x = i * step;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function renderWaveFallback() {
+  const canvas = el("wave");
+  const ctx = canvas.getContext("2d");
+
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 900;
+  const cssH = canvas.clientHeight || 160;
+
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  ctx.globalAlpha = 0.20;
+  ctx.beginPath();
+  ctx.moveTo(0, cssH);
+  for (let x = 0; x <= cssW; x += 12) {
+    const y = cssH/2 + Math.sin(x/60) * 18;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(cssW, cssH);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.beginPath();
+  for (let x = 0; x <= cssW; x += 12) {
+    const y = cssH/2 + Math.sin(x/60) * 18;
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function updateRainLayer(sample) {
+  const rate = sample?.rain?.rateMmH;
+  const layer = el("rainLayer");
+  if (!layer) return;
+
+  const isRaining = isNum(rate) && rate > 0.05;
+  layer.style.opacity = isRaining ? "1" : "0";
+
+  if (!isRaining) {
+    layer.innerHTML = "";
+    return;
+  }
+
+  const drops = 70;
+  layer.innerHTML = "";
+  for (let i = 0; i < drops; i++) {
+    const d = document.createElement("div");
+    d.className = "rainDrop";
+    d.style.left = Math.random() * 100 + "%";
+    d.style.top = (-Math.random() * 100) + "px";
+    d.style.animationDuration = (0.7 + Math.random() * 0.9) + "s";
+    d.style.animationDelay = (-Math.random() * 1.2) + "s";
+    d.style.opacity = String(0.15 + Math.random() * 0.55);
+    layer.appendChild(d);
+  }
 }
 
 function renderHourly(d) {
@@ -385,4 +519,17 @@ function iconFromCode(code) {
   if ([80,81,82].includes(c)) return "🌧️";
   if ([95,96,99].includes(c)) return "⛈️";
   return "☁️";
+}
+
+function conditionLabelFromCode(code) {
+  const c = Number(code);
+  if (c === 0) return "Sereno";
+  if (c === 1 || c === 2) return "Variabile";
+  if (c === 3) return "Coperto";
+  if (c === 45 || c === 48) return "Nebbia";
+  if ([51,53,55,56,57].includes(c)) return "Pioviggine";
+  if ([61,63,65,66,67,80,81,82].includes(c)) return "Pioggia";
+  if ([71,73,75,77,85,86].includes(c)) return "Neve";
+  if ([95,96,99].includes(c)) return "Temporale";
+  return "Meteo";
 }
