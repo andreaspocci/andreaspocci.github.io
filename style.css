@@ -33,7 +33,7 @@ body{
   border:1px solid var(--line);background:rgba(255,255,255,.05);
   border-radius:999px;box-shadow: var(--shadow);
 }
-.dot{width:10px;height:10px;border-radius:99px;background:rgba(34,197,94,.9);box-shadow: 0 0 0 6px rgba(34,197,94,.12)}
+.dot{width:10px;height:10px;border-radius:99px;background:rgba(59,130,246,.95);box-shadow: 0 0 0 6px rgba(59,130,246,.12)}
 .statusText{font-size:13px;color:var(--muted)}
 
 .grid{display:grid;grid-template-columns: 1fr 1fr;gap:16px}
@@ -102,3 +102,4 @@ canvas{
   .hero{flex-direction:column}
   .heroRight{min-width:auto}
 }
+
