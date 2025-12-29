@@ -1,94 +1,58 @@
-const WORKER_FORECAST_URL = "https://dry-frog-bb05.spocci.workers.dev/forecast";
-const STORAGE_KEY = "spocci_meteo_cache_v1";
+const WORKER_BASE = "https://dry-frog-bb05.spocci.workers.dev";
+const URL_STATION_NOW = `${WORKER_BASE}/station/now`;
+const URL_STATION_HISTORY = `${WORKER_BASE}/station/history?hours=48`;
+const URL_FORECAST = `${WORKER_BASE}/forecast`;
 
 const el = (id) => document.getElementById(id);
-
-const state = {
-  data: null,
-  source: "live",
-  cachedAt: null,
-};
 
 init();
 
 async function init() {
-  // Render immediato con cache locale, così non vedi bianco
-  const local = readLocalCache();
-  if (local?.data) {
-    state.data = local.data;
-    state.source = "cache";
-    state.cachedAt = local.cachedAt;
-    render();
+  setStatus("loading", "Carico");
+
+  const [stationNow, stationHist, forecast] = await Promise.allSettled([
+    fetchJson(URL_STATION_NOW),
+    fetchJson(URL_STATION_HISTORY),
+    fetchJson(URL_FORECAST),
+  ]);
+
+  const okStationNow = stationNow.status === "fulfilled" && stationNow.value?.ok;
+  const okHist = stationHist.status === "fulfilled" && stationHist.value?.ok;
+  const okForecast = forecast.status === "fulfilled" && !forecast.value?.error;
+
+  if (!okStationNow && !okForecast) {
+    setStatus("offline", "Offline");
+    el("subtitle").textContent = "Dati non disponibili ora";
+    el("footerText").textContent = `Errore: stazione e previsioni non disponibili`;
+    return;
   }
 
-  // Poi prova a prendere dati aggiornati dal Worker
-  try {
-    const resp = await fetch(WORKER_FORECAST_URL, { cache: "no-store" });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const json = await resp.json();
+  setStatus("live", "Live");
 
-    // Se il Worker ti manda un errore strutturato
-    if (json && json.error) throw new Error(json.error);
+  const updated = new Date().toLocaleString("it-CH", { weekday:"short", day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+  el("subtitle").textContent = `Aggiornato: ${updated}`;
 
-    state.data = json;
-    state.source = "live";
-    state.cachedAt = Date.now();
-
-    writeLocalCache(json, state.cachedAt);
-    render();
-  } catch (e) {
-    // Se non hai cache locale, almeno mostra un messaggio decente
-    if (!state.data) {
-      showOfflineFallback(e);
-    } else {
-      setStatus("cache", `Cache`);
-      el("footerText").textContent = `Usata cache locale. Motivo: ${String(e).slice(0, 120)}`;
-    }
+  if (okStationNow) renderStationNow(stationNow.value.sample);
+  if (okHist) renderTempChart(stationHist.value.points || []);
+  if (okForecast) {
+    renderHourly(forecast.value);
+    renderDaily(forecast.value);
   }
+
+  const footerParts = [];
+  footerParts.push(okStationNow ? "stazione ok" : "stazione ko");
+  footerParts.push(okHist ? "storico ok" : "storico ko");
+  footerParts.push(okForecast ? "previsioni ok" : "previsioni ko");
+  el("footerText").textContent = footerParts.join(" · ");
 }
 
-function showOfflineFallback(err) {
-  setStatus("offline", "Offline");
-  el("subtitle").textContent = "Dati non disponibili ora";
-  el("nowTemp").textContent = "--°";
-  el("nowDesc").textContent = "Nessun dato";
-  el("nowMeta").textContent = "Controlla più tardi";
-  el("rainToday").textContent = "--%";
-  el("windNow").textContent = "-- km/h";
-  el("minMaxToday").textContent = "--° / --°";
-  el("hourly").innerHTML = "";
-  el("daily").innerHTML = "";
-  el("footerText").textContent = `Errore: ${String(err).slice(0, 160)}`;
-}
-
-function render() {
-  if (!state.data) return;
-
-  const d = state.data;
-
-  const now = pickNow(d);
-  const today = pickToday(d);
-  const updated = formatUpdated(state.cachedAt);
-
-  el("subtitle").textContent = `Ultimo aggiornamento: ${updated}`;
-  setStatus(state.source, state.source === "live" ? "Live" : "Cache");
-
-  el("heroIcon").textContent = iconFromCode(now.code);
-  el("nowTemp").textContent = `${Math.round(now.temp)}°`;
-  el("nowDesc").textContent = descFromCode(now.code);
-  el("nowMeta").textContent = `${now.timeLabel} · ${now.windLabel}`;
-
-  el("rainToday").textContent = `${Math.round(today.rainMax)}%`;
-  el("windNow").textContent = `${Math.round(now.wind)} km/h`;
-  el("minMaxToday").textContent = `${Math.round(today.min)}° / ${Math.round(today.max)}°`;
-
-  renderHourly(d);
-  renderDaily(d);
-
-  const footer = state.source === "live"
-    ? "Dati serviti dal Worker con cache"
-    : "Dati da cache locale (il Worker o l’API erano limitati)";
-  el("footerText").textContent = footer;
+async function fetchJson(url) {
+  const r = await fetch(url, { cache: "no-store" });
+  const t = await r.text();
+  let j;
+  try { j = JSON.parse(t); } catch { throw new Error(`JSON invalido da ${url}: ${t.slice(0,120)}`); }
+  if (!r.ok) throw new Error(`HTTP ${r.status} da ${url}: ${t.slice(0,160)}`);
+  return j;
 }
 
 function setStatus(mode, text) {
@@ -96,17 +60,88 @@ function setStatus(mode, text) {
   const dot = pill.querySelector(".dot");
   el("statusText").textContent = text;
 
-  // Non serve colore perfetto, serve chiarezza
   if (mode === "live") {
     dot.style.background = "rgba(34,197,94,.9)";
     dot.style.boxShadow = "0 0 0 6px rgba(34,197,94,.12)";
-  } else if (mode === "cache") {
-    dot.style.background = "rgba(245,158,11,.95)";
-    dot.style.boxShadow = "0 0 0 6px rgba(245,158,11,.12)";
+  } else if (mode === "loading") {
+    dot.style.background = "rgba(59,130,246,.95)";
+    dot.style.boxShadow = "0 0 0 6px rgba(59,130,246,.12)";
   } else {
     dot.style.background = "rgba(239,68,68,.95)";
     dot.style.boxShadow = "0 0 0 6px rgba(239,68,68,.12)";
   }
+}
+
+function renderStationNow(s) {
+  if (!s) return;
+
+  const temp = s.tempC;
+  const hum = s.humidity;
+  const wind = s.windKmh;
+  const press = s.pressure;
+
+  el("nowTemp").textContent = temp == null ? "--°" : `${Math.round(temp)}°`;
+  el("nowMeta").textContent = s.iso ? new Date(s.iso).toLocaleString("it-CH", { hour:"2-digit", minute:"2-digit" }) : "—";
+
+  el("humNow").textContent = hum == null ? "--%" : `${Math.round(hum)}%`;
+  el("windNow").textContent = wind == null ? "-- km/h" : `${Math.round(wind)} km/h`;
+  el("pressNow").textContent = press == null ? "--" : `${Math.round(press)} hPa`;
+}
+
+function renderTempChart(points) {
+  const canvas = el("chartTemp");
+  const ctx = canvas.getContext("2d");
+
+  // resize per device pixel ratio
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth;
+  const cssH = 220;
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const temps = points.map(p => p.tempC).filter(v => typeof v === "number" && isFinite(v));
+  if (temps.length < 2) {
+    el("chartLegend").textContent = "Storico insufficiente. Attiva il cron o lascia il sito aperto per popolare i dati.";
+    return;
+  }
+
+  const min = Math.min(...temps);
+  const max = Math.max(...temps);
+
+  const pad = 18;
+  const w = cssW;
+  const h = cssH;
+
+  // assi leggeri
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath();
+  ctx.moveTo(pad, h - pad);
+  ctx.lineTo(w - pad, h - pad);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // linea temperatura
+  ctx.beginPath();
+  const usableW = w - pad * 2;
+  const usableH = h - pad * 2;
+
+  let first = true;
+  let idx = 0;
+  for (const p of points) {
+    if (typeof p.tempC !== "number" || !isFinite(p.tempC)) continue;
+    const x = pad + (idx / (temps.length - 1)) * usableW;
+    const y = pad + (1 - (p.tempC - min) / (max - min)) * usableH;
+    if (first) { ctx.moveTo(x, y); first = false; }
+    else ctx.lineTo(x, y);
+    idx++;
+  }
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  el("chartLegend").textContent = `Temperatura 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · punti ${temps.length}`;
 }
 
 function renderHourly(d) {
@@ -169,98 +204,24 @@ function renderDaily(d) {
   }
 }
 
-function pickNow(d) {
-  // Preferisci current_weather se presente, altrimenti deriva dall’hourly
-  if (d.current_weather) {
-    const cw = d.current_weather;
-    return {
-      temp: cw.temperature,
-      code: cw.weathercode ?? cw.weather_code ?? 0,
-      wind: cw.windspeed ?? cw.wind_speed ?? 0,
-      timeLabel: formatDateTime(cw.time),
-      windLabel: `Vento ${Math.round((cw.windspeed ?? 0))} km/h`,
-    };
-  }
-
-  const hourly = d.hourly;
-  const i = findClosestHourIndex(hourly.time);
-  return {
-    temp: hourly.temperature_2m[i],
-    code: hourly.weather_code[i],
-    wind: hourly.wind_speed_10m[i],
-    timeLabel: formatDateTime(hourly.time[i]),
-    windLabel: `Vento ${Math.round(hourly.wind_speed_10m[i])} km/h`,
-  };
-}
-
-function pickToday(d) {
-  const daily = d.daily;
-  const i = 0;
-  return {
-    min: daily.temperature_2m_min[i],
-    max: daily.temperature_2m_max[i],
-    rainMax: daily.precipitation_probability_max[i],
-  };
-}
-
-function readLocalCache() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const obj = JSON.parse(raw);
-    if (!obj || !obj.data) return null;
-    return obj;
-  } catch {
-    return null;
-  }
-}
-
-function writeLocalCache(data, cachedAt) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, cachedAt }));
-  } catch {}
-}
-
 function findClosestHourIndex(times) {
-  // times: array di stringhe ISO in timezone già applicato da Open-Meteo
   const now = Date.now();
   let best = 0;
   let bestDiff = Infinity;
   for (let i = 0; i < times.length; i++) {
     const t = Date.parse(times[i]);
     const diff = Math.abs(t - now);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      best = i;
-    }
+    if (diff < bestDiff) { bestDiff = diff; best = i; }
   }
   return best;
 }
 
-function formatUpdated(ts) {
-  if (!ts) return "—";
-  return new Date(ts).toLocaleString("it-CH", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 function formatHour(iso) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("it-CH", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("it-CH", { hour:"2-digit", minute:"2-digit" });
 }
 
 function formatDate(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("it-CH", { day: "2-digit", month: "2-digit" });
-}
-
-function formatDateTime(iso) {
-  const d = new Date(iso);
-  return d.toLocaleString("it-CH", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleDateString("it-CH", { day:"2-digit", month:"2-digit" });
 }
 
 function weekdayName(iso, offset) {
@@ -271,38 +232,16 @@ function weekdayName(iso, offset) {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-// Open-Meteo weather_code mapping (semplificato ma utile)
 function iconFromCode(code) {
   const c = Number(code);
-  if ([0].includes(c)) return "☀️";
-  if ([1, 2].includes(c)) return "🌤️";
-  if ([3].includes(c)) return "☁️";
-  if ([45, 48].includes(c)) return "🌫️";
-  if ([51, 53, 55, 56, 57].includes(c)) return "🌦️";
-  if ([61, 63, 65, 66, 67].includes(c)) return "🌧️";
-  if ([71, 73, 75, 77].includes(c)) return "🌨️";
-  if ([80, 81, 82].includes(c)) return "🌧️";
-  if ([85, 86].includes(c)) return "🌨️";
-  if ([95, 96, 99].includes(c)) return "⛈️";
+  if (c === 0) return "☀️";
+  if (c === 1 || c === 2) return "🌤️";
+  if (c === 3) return "☁️";
+  if (c === 45 || c === 48) return "🌫️";
+  if ([51,53,55,56,57].includes(c)) return "🌦️";
+  if ([61,63,65,66,67].includes(c)) return "🌧️";
+  if ([71,73,75,77,85,86].includes(c)) return "🌨️";
+  if ([80,81,82].includes(c)) return "🌧️";
+  if ([95,96,99].includes(c)) return "⛈️";
   return "☁️";
-}
-
-function descFromCode(code) {
-  const c = Number(code);
-  if (c === 0) return "Sereno";
-  if (c === 1) return "Quasi sereno";
-  if (c === 2) return "Parzialmente nuvoloso";
-  if (c === 3) return "Coperto";
-  if (c === 45 || c === 48) return "Nebbia";
-  if ([51,53,55].includes(c)) return "Pioviggine";
-  if ([56,57].includes(c)) return "Pioviggine gelata";
-  if ([61,63,65].includes(c)) return "Pioggia";
-  if ([66,67].includes(c)) return "Pioggia gelata";
-  if ([71,73,75].includes(c)) return "Neve";
-  if (c === 77) return "Granuli di neve";
-  if ([80,81,82].includes(c)) return "Rovesci";
-  if ([85,86].includes(c)) return "Rovesci di neve";
-  if (c === 95) return "Temporali";
-  if ([96,99].includes(c)) return "Temporali con grandine";
-  return "Variabile";
 }
