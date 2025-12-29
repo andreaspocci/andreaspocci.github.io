@@ -41,6 +41,7 @@ async function init() {
 
   setStatus("live", "Live");
 
+  // hero label: preferisco forecast, altrimenti generic
   let conditionText = "Meteo attuale";
   let conditionDetail = "Stazione meteo attiva";
 
@@ -55,33 +56,43 @@ async function init() {
   el("heroTitle").textContent = conditionText;
   el("heroSubtitle").textContent = conditionDetail;
 
+  let lastSample = null;
   if (okStationNow) {
-    renderStationNow(stationNow.value.sample);
-    updateRainLayer(stationNow.value.sample);
+    lastSample = stationNow.value.sample;
+    renderStationNow(lastSample);
+    updateRainLayer(lastSample);
   } else {
     el("nowMeta").textContent = "Stazione non disponibile";
   }
 
-  if (okHist) {
-    const pts = histCompact.value.points || [];
-    renderSparks(pts);
-    renderTempChartFromCompact(pts);
-    renderWaveFromCompact(pts);
-  } else {
+  // storico: vero se c’è, altrimenti sintetico
+  let pts = [];
+  if (okHist) pts = histCompact.value.points || [];
+
+  const useSynthetic = pts.length < 20 && lastSample; // soglia semplice
+  if (useSynthetic) {
+    pts = generateSyntheticHistoryFromSample(lastSample, 48, 10);
+    el("chartLegend").textContent = "Storico provvisorio (dati sintetici). Appena arriva lo storico reale verrà sostituito.";
+  } else if (!okHist) {
     el("chartLegend").textContent = "Storico non disponibile (KV/cron non configurati o ancora vuoto).";
-    renderWaveFallback();
   }
+
+  renderSparks(pts);
+  renderTempChartFromCompact(pts);
+  renderWaveFromCompact(pts);
 
   if (okForecast) {
     renderHourly(forecast.value);
     renderDaily(forecast.value);
-    el("forecastNote1").textContent = "";
-    el("forecastNote2").textContent = "";
+    const n1 = el("forecastNote1");
+    const n2 = el("forecastNote2");
+    if (n1) n1.textContent = "";
+    if (n2) n2.textContent = "";
   }
 
   const footerParts = [];
   footerParts.push(okStationNow ? "stazione ok" : "stazione ko");
-  footerParts.push(okHist ? "storico ok" : "storico ko");
+  footerParts.push(okHist ? "storico ok" : (useSynthetic ? "storico sintetico" : "storico ko"));
   footerParts.push(okForecast ? "previsioni ok" : "previsioni ko");
   el("footerText").textContent = footerParts.join(" · ");
 }
@@ -270,10 +281,7 @@ function renderTempChartFromCompact(points) {
   ctx.clearRect(0, 0, cssW, cssH);
 
   const temps = points.map(p => p.t).filter(isNum);
-  if (temps.length < 2) {
-    el("chartLegend").textContent = "Storico insufficiente: serve qualche campione (cron).";
-    return;
-  }
+  if (temps.length < 2) return;
 
   const min = Math.min(...temps);
   const max = Math.max(...temps);
@@ -302,8 +310,6 @@ function renderTempChartFromCompact(points) {
   }
   ctx.lineWidth = 2;
   ctx.stroke();
-
-  el("chartLegend").textContent = `Temp 48h: min ${min.toFixed(1)}° · max ${max.toFixed(1)}° · campioni ${temps.length}`;
 }
 
 function renderWaveFromCompact(points) {
@@ -321,10 +327,7 @@ function renderWaveFromCompact(points) {
   ctx.clearRect(0, 0, cssW, cssH);
 
   const temps = points.map(p => p.t).filter(isNum);
-  if (temps.length < 2) {
-    renderWaveFallback();
-    return;
-  }
+  if (temps.length < 2) return;
 
   const min = Math.min(...temps);
   const max = Math.max(...temps);
@@ -348,42 +351,6 @@ function renderWaveFromCompact(points) {
     const y = 12 + (1 - (temps[i] - min) / range) * (cssH - 24);
     const x = i * step;
     if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.lineWidth = 2;
-  ctx.stroke();
-}
-
-function renderWaveFallback() {
-  const canvas = el("wave");
-  const ctx = canvas.getContext("2d");
-
-  const dpr = window.devicePixelRatio || 1;
-  const cssW = canvas.clientWidth || 900;
-  const cssH = canvas.clientHeight || 160;
-
-  canvas.width = Math.floor(cssW * dpr);
-  canvas.height = Math.floor(cssH * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  ctx.clearRect(0, 0, cssW, cssH);
-
-  ctx.globalAlpha = 0.20;
-  ctx.beginPath();
-  ctx.moveTo(0, cssH);
-  for (let x = 0; x <= cssW; x += 12) {
-    const y = cssH/2 + Math.sin(x/60) * 18;
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(cssW, cssH);
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 1;
-
-  ctx.beginPath();
-  for (let x = 0; x <= cssW; x += 12) {
-    const y = cssH/2 + Math.sin(x/60) * 18;
-    if (x === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
   ctx.lineWidth = 2;
@@ -514,9 +481,8 @@ function iconFromCode(code) {
   if (c === 3) return "☁️";
   if (c === 45 || c === 48) return "🌫️";
   if ([51,53,55,56,57].includes(c)) return "🌦️";
-  if ([61,63,65,66,67].includes(c)) return "🌧️";
+  if ([61,63,65,66,67,80,81,82].includes(c)) return "🌧️";
   if ([71,73,75,77,85,86].includes(c)) return "🌨️";
-  if ([80,81,82].includes(c)) return "🌧️";
   if ([95,96,99].includes(c)) return "⛈️";
   return "☁️";
 }
@@ -532,4 +498,75 @@ function conditionLabelFromCode(code) {
   if ([71,73,75,77,85,86].includes(c)) return "Neve";
   if ([95,96,99].includes(c)) return "Temporale";
   return "Meteo";
+}
+
+// genera dati sintetici per riempire grafici finché il KV non è popolato
+function generateSyntheticHistoryFromSample(sample, hours, stepMinutes) {
+  const now = Date.now();
+  const stepMs = stepMinutes * 60 * 1000;
+  const points = [];
+  const n = Math.floor((hours * 60) / stepMinutes) + 1;
+
+  const baseT = sample?.outdoor?.tempC;
+  const baseH = sample?.outdoor?.humidity;
+  const baseP = sample?.pressure?.relativeHpa;
+  const baseW = sample?.wind?.speedKmh;
+  const baseS = sample?.solar?.solarWm2;
+  const baseU = sample?.solar?.uvi;
+  const baseDew = sample?.outdoor?.dewPointC;
+  const baseVpd = sample?.outdoor?.vpdInHg;
+
+  const baseRainRate = sample?.rain?.rateMmH;
+  const baseR1 = sample?.rain?.mm1h;
+  const baseR24 = sample?.rain?.mm24h;
+  const baseRd = sample?.rain?.dailyMm;
+  const baseRm = sample?.rain?.monthlyMm;
+  const baseRy = sample?.rain?.yearlyMm;
+
+  // oscillazioni realistiche, non perfette
+  const ampT = 2.2;
+  const ampH = 6.0;
+  const ampP = 2.0;
+  const ampW = 2.0;
+  const ampS = 60.0;
+
+  for (let i = 0; i < n; i++) {
+    const ts = now - (n - 1 - i) * stepMs;
+    const phase = (i / n) * Math.PI * 2;
+
+    const noise = (a) => (Math.random() - 0.5) * a;
+
+    const t = isNum(baseT) ? baseT + Math.sin(phase) * ampT + noise(0.4) : null;
+    const h = isNum(baseH) ? clamp(baseH + Math.cos(phase) * ampH + noise(1.2), 0, 100) : null;
+    const p = isNum(baseP) ? baseP + Math.sin(phase * 0.6) * ampP + noise(0.6) : null;
+    const w = isNum(baseW) ? Math.max(0, baseW + Math.abs(Math.sin(phase * 1.4)) * ampW + noise(0.6)) : null;
+
+    // insolazione: più alta a metà serie, bassa ai bordi (finto giorno)
+    const dayShape = Math.max(0, Math.sin(phase));
+    const s = isNum(baseS) ? Math.max(0, baseS + dayShape * ampS + noise(10)) : null;
+    const u = isNum(baseU) ? Math.max(0, baseU + dayShape * 0.8 + noise(0.2)) : null;
+
+    const dew = isNum(baseDew) ? baseDew + Math.cos(phase) * 0.8 + noise(0.2) : null;
+    const vpd = isNum(baseVpd) ? Math.max(0, baseVpd + Math.sin(phase) * 0.01 + noise(0.002)) : null;
+
+    const rr = isNum(baseRainRate) ? Math.max(0, baseRainRate + noise(0.05)) : 0;
+    const r1 = isNum(baseR1) ? Math.max(0, baseR1 + noise(0.1)) : 0;
+    const r24 = isNum(baseR24) ? Math.max(0, baseR24 + noise(0.2)) : 0;
+    const rd = isNum(baseRd) ? Math.max(0, baseRd + noise(0.2)) : 0;
+    const rm = isNum(baseRm) ? Math.max(0, baseRm + noise(0.4)) : 0;
+    const ry = isNum(baseRy) ? Math.max(0, baseRy + noise(1.0)) : 0;
+
+    points.push({
+      ts,
+      t, h, p, w,
+      s, u, dew, vpd,
+      rr, r1, r24, rd, rm, ry
+    });
+  }
+
+  return points;
+}
+
+function clamp(v, min, max) {
+  return Math.min(Math.max(v, min), max);
 }
