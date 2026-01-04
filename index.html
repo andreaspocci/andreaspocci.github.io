@@ -1,32 +1,35 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Meteo Station – Sant’Antonino</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #111;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      overflow: hidden;
-    }
-
-    iframe {
-      width: 100%;
-      height: 100vh;
-      border: 0;
-      display: block;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meteo Station Dashboard</title>
+    <style>
+        /* Reset per togliere margini bianchi e barre di scorrimento doppie */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1a1a1a; /* Sfondo scuro per caricamento elegante */
+        }
+        
+        /* Stile Iframe a tutto schermo */
+        iframe {
+            display: block;
+            width: 100vw;   /* 100% della larghezza viewport */
+            height: 100vh;  /* 100% dell'altezza viewport */
+            border: none;
+        }
+    </style>
 </head>
-
 <body>
-  <iframe
-    src="https://snapshots.raintank.io/dashboard/snapshot/8OGFeJspVZTCKEUiL2a0HN0spJM54zgO?kiosk=tv">
-  </iframe>
+
+    <iframe 
+        src="https://www.ecowitt.net/home/share?authorize=35GSW8"
+        title="Ecowitt Dashboard"
+        allowfullscreen>
+    </iframe>
+
 </body>
 </html>
